@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Upload,
@@ -47,12 +47,40 @@ export default function UploadPage() {
   const [rawOcrId, setRawOcrId] = useState<number | undefined>(undefined);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
+  useEffect(() => {
+    const loadCurrentUser = async () => {
+      try {
+        let token = localStorage.getItem("auth_token");
+        const res = await fetch("/api/auth/me", {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) {
+            if (data.user.patientId) setPatientId(data.user.patientId);
+            if (data.user.name) setPatientName(data.user.name);
+          }
+        }
+      } catch (e) {
+        const savedUser = localStorage.getItem("user");
+        if (savedUser) {
+          try {
+            const u = JSON.parse(savedUser);
+            if (u.patientId) setPatientId(u.patientId);
+            if (u.name) setPatientName(u.name);
+          } catch (err) {}
+        }
+      }
+    };
+    loadCurrentUser();
+  }, []);
+
   const generateRandomUhid = () => {
-    const randomNum = Math.floor(100000 + Math.random() * 900000);
-    const id = `UHID-2026-${randomNum}`;
-    setPatientId(id);
+    // Generate 9-digit patient ID fallback
+    const randomNum = Math.floor(100000000 + Math.random() * 900000000);
+    setPatientId(randomNum.toString());
     if (!patientName) {
-      setPatientName("Priyanka Sharma");
+      setPatientName("Rahul Sharma");
     }
   };
 
@@ -402,7 +430,7 @@ export default function UploadPage() {
                     )}
                   </div>
                   <p className="text-[10px] text-slate-400">
-                    Unique patient record ID used to map clinical observations in Neon DB.
+                    Unique 9-digit patient ID mapped in Supabase EHR.
                   </p>
                 </div>
 

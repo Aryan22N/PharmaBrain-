@@ -25,7 +25,10 @@ export async function GET(request: Request) {
     }
 
     const users = await query(
-      `SELECT id, name, email, "createdAt" FROM "User" WHERE id = $1 LIMIT 1;`,
+      `SELECT id, name, email, "patientId", "legacyPatientId", "createdAt" 
+       FROM "User" 
+       WHERE id = $1 
+       LIMIT 1;`,
       [payload.userId]
     );
 
@@ -41,6 +44,8 @@ export async function GET(request: Request) {
         id: user.id,
         name: user.name,
         email: user.email,
+        patientId: user.patientId,
+        legacyPatientId: user.legacyPatientId || null,
         createdAt: user.createdAt,
       },
     });

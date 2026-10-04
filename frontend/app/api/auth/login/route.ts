@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { comparePassword, generateToken } from '@/lib/auth';
+import { comparePassword, generateToken, generate9DigitPatientId } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json();
+    const body = await request.json().catch(() => null);
+    if (!body) {
+      return NextResponse.json({ error: 'Invalid JSON request body' }, { status: 400 });
+    }
+
+    const { email, password } = body;
 
     if (!email || !password) {
       return NextResponse.json(
@@ -13,9 +18,14 @@ export async function POST(request: Request) {
       );
     }
 
+    const trimmedEmail = email.trim().toLowerCase();
+
     const users = await query(
-      `SELECT id, name, email, "passwordHash" FROM "User" WHERE LOWER(email) = LOWER($1) LIMIT 1;`,
-      [email]
+      `SELECT id, name, email, "passwordHash", "patientId", "legacyPatientId" 
+       FROM "User" 
+       WHERE LOWER(email) = LOWER($1) 
+       LIMIT 1;`,
+      [trimmedEmail]
     );
 
     if (users.length === 0) {
@@ -35,10 +45,21 @@ export async function POST(request: Request) {
       );
     }
 
+    // Ensure user has a valid 9-digit patient ID permanently stored
+    let patientId = user.patientId;
+    if (!patientId) {
+      patientId = generate9DigitPatientId();
+      await query(
+        `UPDATE "User" SET "patientId" = $1 WHERE id = $2;`,
+        [patientId, user.id]
+      );
+    }
+
     const token = generateToken({
       userId: user.id,
       email: user.email,
       name: user.name,
+      patientId,
     });
 
     const response = NextResponse.json(
@@ -48,6 +69,8 @@ export async function POST(request: Request) {
           id: user.id,
           name: user.name,
           email: user.email,
+          patientId,
+          legacyPatientId: user.legacyPatientId || null,
         },
         token,
       },

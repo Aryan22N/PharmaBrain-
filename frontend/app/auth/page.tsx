@@ -76,7 +76,7 @@ export default function AuthPage() {
               DEMO MVP
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">Neon Postgres & JWT Secured Access</p>
+          <p className="text-xs text-slate-400 mt-1">Supabase Postgres & JWT Secured Access</p>
         </div>
 
         {/* Auth Toggle Tabs */}
@@ -185,7 +185,7 @@ export default function AuthPage() {
         <div className="mt-6 pt-6 border-t border-slate-800/80 text-center">
           <p className="text-[11px] text-slate-500 flex items-center justify-center gap-1.5">
             <Shield className="w-3.5 h-3.5 text-teal-400" />
-            <span>Encrypted HIPAA Telemetry • Neon DB</span>
+            <span>Encrypted HIPAA Telemetry • Supabase DB</span>
           </p>
         </div>
       </div>

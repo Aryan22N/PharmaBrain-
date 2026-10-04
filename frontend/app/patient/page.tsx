@@ -255,14 +255,15 @@ export default function PatientDashboard() {
 
   const userName = userData?.name || "Rahul Sharma";
   const userInitials = userData?.initials || "RS";
-  const patientCode = userData?.patientCode || "CCM12578";
+  const patientCode = userData?.patientId || userData?.patientCode || "483027156";
+  const legacyPatientCode = userData?.legacyPatientId || null;
   const userEmail = userData?.email || "rahul.sharma@example.com";
 
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f4f7f6] flex flex-col items-center justify-center p-4">
         <Loader2 className="w-10 h-10 text-[#008080] animate-spin mb-3" />
-        <p className="text-xs font-bold text-slate-600">Loading your Patient DMR Dashboard from Neon DB...</p>
+        <p className="text-xs font-bold text-slate-600">Loading your Patient DMR Dashboard from Supabase...</p>
       </div>
     );
   }
@@ -359,9 +360,14 @@ export default function PatientDashboard() {
                 <p className="text-[11px] text-slate-500 truncate">
                   {userEmail}
                 </p>
-                <p className="text-[10px] font-bold text-teal-700 mt-0.5">
+                <p className="text-[10px] font-bold text-teal-700 mt-0.5 font-mono">
                   ID: {patientCode}
                 </p>
+                {legacyPatientCode && (
+                  <p className="text-[9px] text-slate-400 font-mono">
+                    Legacy: {legacyPatientCode}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -420,7 +426,7 @@ export default function PatientDashboard() {
               className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors border border-slate-200"
             >
               <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
-              Sync Neon DB
+              Sync Supabase EHR
             </button>
             <button
               onClick={handleLogout}
@@ -437,13 +443,18 @@ export default function PatientDashboard() {
           {/* Welcome Banner */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <h2 className="text-2xl font-extrabold text-slate-900">
                   Welcome, {userName}
                 </h2>
-                <span className="bg-teal-50 text-teal-700 text-xs font-bold px-2.5 py-0.5 rounded border border-teal-200">
+                <span className="bg-teal-50 text-teal-700 text-xs font-bold px-2.5 py-0.5 rounded border border-teal-200 font-mono">
                   {patientCode}
                 </span>
+                {legacyPatientCode && (
+                  <span className="bg-slate-100 text-slate-600 text-[11px] font-medium px-2 py-0.5 rounded border border-slate-200 font-mono">
+                    Legacy: {legacyPatientCode}
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-500">
                 Personal Medical Record • Longitudinal Care Summary as of October 2026
@@ -484,7 +495,7 @@ export default function PatientDashboard() {
             </button>
           </div>
 
-          {/* 6 Key Dynamic Metric Cards from Neon DB */}
+          {/* 6 Key Dynamic Metric Cards from Supabase DB */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {/* 1. Total Records */}
             <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
@@ -494,7 +505,7 @@ export default function PatientDashboard() {
               </div>
               <div>
                 <span className="text-2xl font-extrabold text-slate-900">{metrics.totalRecords}</span>
-                <p className="text-[10px] text-slate-400 mt-0.5">Across Neon DB</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">Across Patient EHR</p>
               </div>
             </div>
 
@@ -571,7 +582,7 @@ export default function PatientDashboard() {
                     </h2>
                   </div>
                   <p className="text-xs text-slate-500">
-                    Unified electronic health summary stored across Neon PostgreSQL. Click any record below to view its complete clinical summary.
+                    Unified electronic health summary stored across Supabase PostgreSQL. Click any record below to view its complete clinical summary.
                   </p>
                 </div>
                 <button
@@ -682,10 +693,10 @@ export default function PatientDashboard() {
                                 className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
                                   doc.status === "CONFIRMED"
                                     ? "text-emerald-700 bg-emerald-50 border border-emerald-200"
-                                    : "text-amber-700 bg-amber-50 border border-amber-200"
+                                    : "text-amber-800 bg-amber-50 border border-amber-300 font-bold"
                                 }`}
                               >
-                                {doc.status === "CONFIRMED" ? "Hospital Verified" : doc.status}
+                                {doc.status === "CONFIRMED" ? "Hospital Verified" : "NOT CONFIRMED"}
                               </span>
                             </div>
                             <p className="text-xs text-slate-600 leading-relaxed line-clamp-2 mt-1">
@@ -739,12 +750,12 @@ export default function PatientDashboard() {
                     </h3>
                   </div>
                   <span className="text-[11px] font-semibold text-slate-500">
-                    {documents.length} Records in Neon DB
+                    {documents.length} Records in EHR Database
                   </span>
                 </div>
 
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Summary for patient <strong className="text-slate-800">{userName}</strong> ({userEmail}). Integrated with Neon PostgreSQL and automated document OCR telemetry. Click any record to inspect the complete clinical summary.
+                  Summary for patient <strong className="text-slate-800">{userName}</strong> ({userEmail}). Integrated with Supabase PostgreSQL and automated document OCR telemetry. Click any record to inspect the complete clinical summary.
                 </p>
 
                 {/* Dynamic Clickable Documents List */}
@@ -781,10 +792,10 @@ export default function PatientDashboard() {
                                 className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase shrink-0 ${
                                   doc.status === "CONFIRMED"
                                     ? "text-emerald-700 bg-emerald-50 border border-emerald-200"
-                                    : "text-amber-700 bg-amber-50 border border-amber-200"
+                                    : "text-amber-800 bg-amber-50 border border-amber-300 font-bold"
                                 }`}
                               >
-                                {doc.status === "CONFIRMED" ? "Hospital Verified" : doc.status}
+                                {doc.status === "CONFIRMED" ? "Hospital Verified" : "NOT CONFIRMED"}
                               </span>
                             </div>
                             <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-2 mt-1">
@@ -878,14 +889,20 @@ export default function PatientDashboard() {
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2.5">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-teal-50 text-teal-800 border border-teal-200">
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                      selectedSummaryRecord.status === "CONFIRMED"
+                        ? "bg-teal-50 text-teal-800 border border-teal-200"
+                        : "bg-amber-50 text-amber-800 border border-amber-300"
+                    }`}
+                  >
                     <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
                     {selectedSummaryRecord.status === "CONFIRMED"
                       ? "Hospital Verified Record"
-                      : "Processed EHR Document"}
+                      : "NOT CONFIRMED • Unverified Prescription"}
                   </span>
                   <span className="text-xs font-mono text-slate-400">
-                    Record #{selectedSummaryRecord.id} • Neon DB
+                    Record #{selectedSummaryRecord.id} • Supabase EHR
                   </span>
                 </div>
                 <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
@@ -910,6 +927,32 @@ export default function PatientDashboard() {
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            {/* Unconfirmed Alert Callout Banner */}
+            {selectedSummaryRecord.status !== "CONFIRMED" && (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-start gap-2.5 text-xs text-amber-900">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold">Prescription Status: NOT CONFIRMED (Clinical Draft)</p>
+                    <p className="text-[11px] text-amber-800 leading-relaxed">
+                      This document has been parsed by PaddleOCR & structured by AI. Review and verify the dosage before marking Hospital Verified.
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href={
+                    selectedSummaryRecord.filePath?.startsWith("/extractions/")
+                      ? selectedSummaryRecord.filePath
+                      : `/extractions/${selectedSummaryRecord.id}`
+                  }
+                  className="px-4 py-2 bg-[#008080] hover:bg-[#006666] text-white text-xs font-bold rounded-xl shadow-xs transition-colors shrink-0 flex items-center justify-center gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Review & Confirm Now &rarr;
+                </Link>
+              </div>
+            )}
 
             {/* Narrative Clinical Summary Banner */}
             <div className="p-4 bg-teal-50/70 border border-teal-100 rounded-2xl space-y-1.5">

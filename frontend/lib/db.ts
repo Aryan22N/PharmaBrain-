@@ -1,16 +1,50 @@
-import { Pool, neon } from '@neondatabase/serverless';
+import { Pool, QueryResultRow } from 'pg';
 
-const connectionString = process.env.DATABASE_URL || "postgresql://neondb_owner:npg_fQGVYh90qgZX@ep-tiny-meadow-b3qqap6m-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require";
+// Supabase PostgreSQL Database Connection
+const connectionString =
+  process.env.DATABASE_URL ||
+  "postgresql://postgres:postgres@localhost:5432/postgres";
 
-export const pool = new Pool({ connectionString });
-export const sql = neon(connectionString);
+const isLocalhost =
+  connectionString.includes('localhost') ||
+  connectionString.includes('127.0.0.1') ||
+  connectionString.startsWith('sqlite');
 
-export async function query(text: string, params: any[] = []) {
+// Global pool instance to prevent connection leaks across Next.js API reloads
+declare global {
+  // eslint-disable-next-line no-var
+  var __dbPool: Pool | undefined;
+}
+
+export const pool: Pool =
+  global.__dbPool ||
+  new Pool({
+    connectionString,
+    ssl: isLocalhost ? false : { rejectUnauthorized: false },
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+  });
+
+if (process.env.NODE_ENV !== 'production') {
+  global.__dbPool = pool;
+}
+
+/**
+ * Execute a parameterized query against Supabase PostgreSQL
+ */
+export async function query<T extends QueryResultRow = any>(
+  text: string,
+  params: any[] = []
+): Promise<T[]> {
+  const client = await pool.connect();
   try {
-    const res = await pool.query(text, params);
+    const res = await client.query<T>(text, params);
     return res.rows;
   } catch (error) {
-    console.error('Neon DB Error:', error);
+    console.error('Supabase DB Query Error:', error);
     throw error;
+  } finally {
+    client.release();
   }
 }

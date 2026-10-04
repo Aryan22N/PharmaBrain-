@@ -27,13 +27,14 @@ export async function POST(
       );
     }
 
-    // Mirror confirmed prescription to Document and Analysis tables in Neon DB for Patient Summary
+    // Mirror confirmed prescription to Document and Analysis tables in Supabase DB for Patient Summary
     try {
       const { query } = await import("@/lib/db");
       const { cookies } = await import("next/headers");
       const { verifyToken } = await import("@/lib/auth");
 
       let userId = 1;
+      let patientId: string | null = null;
       try {
         const cookieStore = await cookies();
         let token = cookieStore.get("auth_token")?.value;
@@ -46,6 +47,7 @@ export async function POST(
         if (token) {
           const payload = verifyToken(token);
           if (payload?.userId) userId = payload.userId;
+          if (payload?.patientId) patientId = payload.patientId;
         }
       } catch (authErr) {}
 
@@ -57,22 +59,44 @@ export async function POST(
         .join(", ");
       const docSummary = `${rec.hospital || "Medical Facility"} (${typeof rec.doctor === "string" ? rec.doctor : rec.doctor?.name || "Dr. Verified"}). Prescribed: ${medSummary || "Verified therapies"}.`;
 
-      const docRows = await query(
-        `INSERT INTO "Document" ("userId", "originalName", "storedFilename", "documentType", "mimeType", "filePath", status, "uploadedAt")
-         VALUES ($1, $2, $2, 'PRESCRIPTION', 'image/jpeg', $3, 'CONFIRMED', $4)
-         RETURNING id;`,
-        [userId, docName, `/extractions/${id}`, new Date().toISOString()]
+      // Check if an unconfirmed document entry exists for this extraction
+      const existingDocs = await query(
+        `SELECT id FROM "Document" WHERE "filePath" = $1 ORDER BY id DESC LIMIT 1;`,
+        [`/extractions/${id}`]
       );
 
-      if (docRows.length > 0) {
+      if (existingDocs.length > 0) {
+        const docId = existingDocs[0].id;
         await query(
-          `INSERT INTO "Analysis" ("documentId", summary, "structuredResult", "isDemo", "createdAt")
-           VALUES ($1, $2, $3, false, $4);`,
-          [docRows[0].id, docSummary, JSON.stringify(rec), new Date().toISOString()]
+          `UPDATE "Document" 
+           SET status = 'CONFIRMED', "originalName" = $1 
+           WHERE id = $2;`,
+          [docName, docId]
         );
+        await query(
+          `UPDATE "Analysis" 
+           SET summary = $1, "structuredResult" = $2 
+           WHERE "documentId" = $3;`,
+          [docSummary, JSON.stringify(rec), docId]
+        );
+      } else {
+        const docRows = await query(
+          `INSERT INTO "Document" ("userId", "patientId", "originalName", "storedFilename", "documentType", "mimeType", "filePath", status, "uploadedAt")
+           VALUES ($1, $2, $3, $3, 'PRESCRIPTION', 'image/jpeg', $4, 'CONFIRMED', $5)
+           RETURNING id;`,
+          [userId, patientId, docName, `/extractions/${id}`, new Date().toISOString()]
+        );
+
+        if (docRows.length > 0) {
+          await query(
+            `INSERT INTO "Analysis" ("documentId", summary, "structuredResult", "isDemo", "createdAt")
+             VALUES ($1, $2, $3, false, $4);`,
+            [docRows[0].id, docSummary, JSON.stringify(rec), new Date().toISOString()]
+          );
+        }
       }
     } catch (dbErr) {
-      console.warn("Could not mirror confirmed prescription to Document table:", dbErr);
+      console.warn("Could not update/mirror confirmed prescription to Document table:", dbErr);
     }
 
     return NextResponse.json(result.data);
