@@ -61,12 +61,21 @@ export async function POST(
 
       // Check if an unconfirmed document entry exists for this extraction
       const existingDocs = await query(
-        `SELECT id FROM "Document" WHERE "filePath" = $1 ORDER BY id DESC LIMIT 1;`,
+        `SELECT d.id, d."storedFilename", a."structuredResult" 
+         FROM "Document" d
+         LEFT JOIN "Analysis" a ON d.id = a."documentId"
+         WHERE d."filePath" = $1 ORDER BY d.id DESC LIMIT 1;`,
         [`/extractions/${id}`]
       );
 
       if (existingDocs.length > 0) {
         const docId = existingDocs[0].id;
+        const prevResult = existingDocs[0].structuredResult || {};
+        if (!rec.image_url && prevResult.image_url) {
+          rec.image_url = prevResult.image_url;
+        } else if (!rec.image_url && existingDocs[0].storedFilename?.startsWith("/uploads/")) {
+          rec.image_url = existingDocs[0].storedFilename;
+        }
         await query(
           `UPDATE "Document" 
            SET status = 'CONFIRMED', "originalName" = $1 
@@ -82,9 +91,9 @@ export async function POST(
       } else {
         const docRows = await query(
           `INSERT INTO "Document" ("userId", "patientId", "originalName", "storedFilename", "documentType", "mimeType", "filePath", status, "uploadedAt")
-           VALUES ($1, $2, $3, $3, 'PRESCRIPTION', 'image/jpeg', $4, 'CONFIRMED', $5)
+           VALUES ($1, $2, $3, $4, 'PRESCRIPTION', 'image/jpeg', $5, 'CONFIRMED', $6)
            RETURNING id;`,
-          [userId, patientId, docName, `/extractions/${id}`, new Date().toISOString()]
+          [userId, patientId, docName, rec.image_url || `/extractions/${id}`, `/extractions/${id}`, new Date().toISOString()]
         );
 
         if (docRows.length > 0) {

@@ -34,9 +34,9 @@ import {
   ExternalLink,
   Check,
   Eye,
-  Trash2,
   Search,
   Filter,
+  FileImage,
 } from "lucide-react";
 import {
   ExtractionPayload,
@@ -681,8 +681,21 @@ export default function PatientDashboard() {
                         title="Click to view complete clinical summary"
                       >
                         <div className="flex items-start gap-4 overflow-hidden min-w-0">
-                          <div className="w-10 h-10 rounded-xl bg-teal-500/10 text-teal-700 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-teal-600 group-hover:text-white transition-colors">
-                            <FileText className="w-5 h-5" />
+                          <div className="w-14 h-14 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shrink-0 mt-0.5 group-hover:border-teal-400 transition-all shadow-2xs relative">
+                            {doc.imageUrl ? (
+                              <img
+                                src={doc.imageUrl}
+                                alt={doc.filename}
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = "/sample_prescription.png";
+                                }}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-teal-500/10 text-teal-700 flex items-center justify-center">
+                                <FileText className="w-6 h-6" />
+                              </div>
+                            )}
                           </div>
                           <div className="overflow-hidden min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
@@ -780,8 +793,21 @@ export default function PatientDashboard() {
                         title="Click to view complete clinical summary"
                       >
                         <div className="flex items-start gap-3.5 overflow-hidden min-w-0">
-                          <div className="w-9 h-9 rounded-xl bg-teal-500/10 text-teal-700 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-teal-600 group-hover:text-white transition-colors">
-                            <FileText className="w-4 h-4" />
+                          <div className="w-12 h-12 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shrink-0 mt-0.5 group-hover:border-teal-400 transition-all shadow-2xs relative">
+                            {doc.imageUrl ? (
+                              <img
+                                src={doc.imageUrl}
+                                alt={doc.filename}
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = "/sample_prescription.png";
+                                }}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-teal-500/10 text-teal-700 flex items-center justify-center">
+                                <FileText className="w-5 h-5" />
+                              </div>
+                            )}
                           </div>
                           <div className="overflow-hidden min-w-0">
                             <div className="flex items-center gap-2">
@@ -953,6 +979,39 @@ export default function PatientDashboard() {
                 </Link>
               </div>
             )}
+
+            {/* Uploaded Prescription Document Image Viewer */}
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+                  <FileImage className="w-4 h-4 text-[#008080]" />
+                  <span>Original Uploaded Prescription Document</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200 uppercase">
+                    Source Scan
+                  </span>
+                </div>
+                <a
+                  href={selectedSummaryRecord.imageUrl || "/sample_prescription.png"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-[#008080] hover:text-[#006666] hover:underline"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Open High-Resolution Scan &rarr;
+                </a>
+              </div>
+
+              <div className="relative group rounded-xl overflow-hidden border border-slate-200 bg-slate-950 flex items-center justify-center p-3 min-h-[220px] max-h-[360px]">
+                <img
+                  src={selectedSummaryRecord.imageUrl || "/sample_prescription.png"}
+                  alt={selectedSummaryRecord.filename || "Uploaded Prescription Scan"}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "/sample_prescription.png";
+                  }}
+                  className="max-h-[340px] w-auto object-contain rounded-lg shadow-sm transition-transform duration-300 group-hover:scale-[1.01]"
+                />
+              </div>
+            </div>
 
             {/* Narrative Clinical Summary Banner */}
             <div className="p-4 bg-teal-50/70 border border-teal-100 rounded-2xl space-y-1.5">

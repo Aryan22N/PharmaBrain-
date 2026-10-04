@@ -107,11 +107,31 @@ export async function POST(req: NextRequest) {
 
     console.log(`[${new Date().toISOString()}] [API/OCR] Pipeline completed successfully in ${elapsedMs}ms`);
 
+    // Save uploaded image to public/uploads for direct browser viewing in Patient Summary
+    let publicImageUrl = "/sample_prescription.png";
+    try {
+      const path = await import("path");
+      const fs = await import("fs/promises");
+      const uploadsDir = path.join(process.cwd(), "public", "uploads");
+      await fs.mkdir(uploadsDir, { recursive: true });
+
+      const ext = path.extname(file.name) || ".png";
+      const cleanBase = file.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, "_");
+      const safeFilename = `${cleanBase}_${Date.now()}${ext}`;
+      const diskPath = path.join(uploadsDir, safeFilename);
+      const fileBytes = Buffer.from(await file.arrayBuffer());
+      await fs.writeFile(diskPath, fileBytes);
+      publicImageUrl = `/uploads/${safeFilename}`;
+    } catch (saveErr) {
+      console.warn("Could not save image to public/uploads:", saveErr);
+    }
+
     // Immediately save to Patient Summary as NOT CONFIRMED so it appears in the dashboard
     try {
       const { query } = await import("@/lib/db");
       const extractionId = result.data.extraction_id;
       const rec = result.data.record || {};
+      rec.image_url = publicImageUrl;
       const hospitalName = rec.hospital || file.name.replace(/\.[^/.]+$/, "");
       const dateIso = rec.date_iso || new Date().toISOString().slice(0, 10);
       const docName = `${hospitalName} - ${dateIso}`;
@@ -123,7 +143,7 @@ export async function POST(req: NextRequest) {
         `INSERT INTO "Document" ("userId", "patientId", "originalName", "storedFilename", "documentType", "mimeType", "filePath", status, "uploadedAt")
          VALUES ($1, $2, $3, $4, 'PRESCRIPTION', $5, $6, 'NOT CONFIRMED', $7)
          RETURNING id;`,
-        [userId, effectivePatientId, docName, file.name, file.type, `/extractions/${extractionId}`, new Date().toISOString()]
+        [userId, effectivePatientId, docName, publicImageUrl, file.type, `/extractions/${extractionId}`, new Date().toISOString()]
       );
 
       if (docRows.length > 0) {
@@ -137,6 +157,7 @@ export async function POST(req: NextRequest) {
       console.warn("Could not save initial NOT CONFIRMED document to DB:", dbErr);
     }
 
+    result.data.image_url = publicImageUrl;
     return NextResponse.json(result.data);
   } catch (err: any) {
     console.error(`[${new Date().toISOString()}] [API/OCR] Unexpected exception in route:`, err);

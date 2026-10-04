@@ -52,7 +52,7 @@ export async function GET(request: Request) {
 
     // 2. Fetch User's Documents strictly isolated to this patient account
     const documents = await query(
-      `SELECT d.id, d."originalName", d."documentType", d.status, d."uploadedAt", d."filePath",
+      `SELECT d.id, d."originalName", d."storedFilename", d."documentType", d.status, d."uploadedAt", d."filePath",
               a.summary, a."structuredResult"
        FROM "Document" d
        LEFT JOIN "Analysis" a ON d.id = a."documentId"
@@ -151,16 +151,33 @@ export async function GET(request: Request) {
         bloodPressure,
         historyCoverage,
       },
-      documents: documents.map(d => ({
-        id: d.id,
-        filename: d.originalName,
-        status: d.status || 'NOT CONFIRMED',
-        uploadedAt: d.uploadedAt,
-        summary: d.summary || 'Prescription document processed via PaddleOCR pipeline',
-        medicines: d.structuredResult?.medicines || [],
-        structuredResult: d.structuredResult || null,
-        filePath: d.filePath || null,
-      })),
+      documents: documents.map(d => {
+        let imageUrl: string = "/sample_prescription.png";
+        if (d.structuredResult?.image_url && typeof d.structuredResult.image_url === "string") {
+          imageUrl = d.structuredResult.image_url;
+        } else if (typeof d.storedFilename === "string" && d.storedFilename.startsWith("/uploads/")) {
+          imageUrl = d.storedFilename;
+        } else if (
+          typeof d.storedFilename === "string" &&
+          /\.(jpg|jpeg|png|webp)$/i.test(d.storedFilename)
+        ) {
+          imageUrl = `/uploads/${d.storedFilename}`;
+        } else if (typeof d.filePath === "string" && d.filePath.startsWith("/uploads/")) {
+          imageUrl = d.filePath;
+        }
+
+        return {
+          id: d.id,
+          filename: d.originalName,
+          status: d.status || 'NOT CONFIRMED',
+          uploadedAt: d.uploadedAt,
+          summary: d.summary || 'Prescription document processed via PaddleOCR pipeline',
+          medicines: d.structuredResult?.medicines || [],
+          structuredResult: d.structuredResult || null,
+          filePath: d.filePath || null,
+          imageUrl,
+        };
+      }),
       extractedMedicines,
     });
   } catch (error: any) {
