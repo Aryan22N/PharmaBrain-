@@ -19,7 +19,7 @@ export async function pythonBackendFetch<T>(
   timeoutMs = 300000 // 5 minutes default timeout for heavy OCR/LLM workloads
 ): Promise<{ ok: boolean; status: number; data?: T; error?: string; rawOcrId?: number }> {
   const baseUrl = process.env.PYTHON_API_URL || "http://127.0.0.1:8000";
-  const apiToken = process.env.PYTHON_API_TOKEN || "";
+  const apiToken = process.env.PYTHON_API_TOKEN || "rx_local_dev_token_2026_secure";
 
   const url = `${baseUrl.replace(/\/+$/, "")}/${endpoint.replace(/^\/+/, "")}`;
 
