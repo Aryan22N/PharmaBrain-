@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
-export default function PatientPage() {
+export default function PatientIdPage() {
   redirect("/patient/overview");
 }

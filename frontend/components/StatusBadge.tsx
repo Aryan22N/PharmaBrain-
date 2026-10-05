@@ -9,9 +9,10 @@ interface BadgeProps {
   showIcon?: boolean;
 }
 
-export function GateBadge({ status, size = "md" }: { status: QualityGateStatus; size?: "sm" | "md" }) {
+export function GateBadge({ status, gate, size = "md" }: { status?: QualityGateStatus; gate?: any; size?: "sm" | "md" }) {
   const isSm = size === "sm";
-  switch (status) {
+  const gateStatus = status || gate?.status || "NEEDS_CHECK";
+  switch (gateStatus) {
     case "HIGH_CONFIDENCE":
       return (
         <span className={`inline-flex items-center gap-1.5 font-medium rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 ${isSm ? "px-2 py-0.5 text-xs" : "px-3 py-1 text-sm"}`}>

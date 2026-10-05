@@ -2,17 +2,24 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import PatientDashboard from "./patient/page";
 
 export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem("auth_token");
+    const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
     if (!token) {
-      router.push("/auth");
+      router.replace("/auth");
+    } else {
+      router.replace("/patient/overview");
     }
   }, [router]);
 
-  return <PatientDashboard />;
+  return (
+    <div className="min-h-screen bg-[#f4f7f6] flex items-center justify-center">
+      <div className="animate-pulse text-xs font-bold text-teal-700">
+        Loading Patient Portal...
+      </div>
+    </div>
+  );
 }

@@ -546,14 +546,14 @@ export default function UploadPage() {
                   <div className="text-[10px] text-slate-400">1280px scaling</div>
                 </div>
 
-                <div className={`p-2.5 rounded-xl border ${step === "ocr" ? "bg-teal-50 border-teal-300 text-teal-900" : step === "structuring" || step === "finalizing" || step === "success" ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-slate-50 border-slate-200 text-slate-400"}`}>
+                <div className={`p-2.5 rounded-xl border ${step === "ocr" ? "bg-teal-50 border-teal-300 text-teal-900" : step === "structuring" || step === "finalizing" ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-slate-50 border-slate-200 text-slate-400"}`}>
                   <div className="font-bold flex items-center gap-1.5 mb-0.5">
                     2. PaddleOCR
                   </div>
                   <div className="text-[10px] text-slate-400">Line bounding boxes</div>
                 </div>
 
-                <div className={`p-2.5 rounded-xl border ${step === "structuring" ? "bg-teal-50 border-teal-300 text-teal-900" : step === "finalizing" || step === "success" ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-slate-50 border-slate-200 text-slate-400"}`}>
+                <div className={`p-2.5 rounded-xl border ${step === "structuring" ? "bg-teal-50 border-teal-300 text-teal-900" : step === "finalizing" ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-slate-50 border-slate-200 text-slate-400"}`}>
                   <div className="font-bold flex items-center gap-1.5 mb-0.5">
                     3. Gemini AI
                   </div>

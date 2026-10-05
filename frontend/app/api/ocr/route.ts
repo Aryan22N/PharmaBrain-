@@ -129,8 +129,9 @@ export async function POST(req: NextRequest) {
     // Immediately save to Patient Summary as NOT CONFIRMED so it appears in the dashboard
     try {
       const { query } = await import("@/lib/db");
-      const extractionId = result.data.extraction_id;
-      const rec = result.data.record || {};
+      const extractionData = result.data as any;
+      const extractionId = extractionData?.extraction_id;
+      const rec = extractionData?.record || {};
       rec.image_url = publicImageUrl;
       const hospitalName = rec.hospital || file.name.replace(/\.[^/.]+$/, "");
       const dateIso = rec.date_iso || new Date().toISOString().slice(0, 10);
@@ -157,7 +158,9 @@ export async function POST(req: NextRequest) {
       console.warn("Could not save initial NOT CONFIRMED document to DB:", dbErr);
     }
 
-    result.data.image_url = publicImageUrl;
+    if (result.data) {
+      (result.data as any).image_url = publicImageUrl;
+    }
     return NextResponse.json(result.data);
   } catch (err: any) {
     console.error(`[${new Date().toISOString()}] [API/OCR] Unexpected exception in route:`, err);
