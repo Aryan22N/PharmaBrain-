@@ -104,6 +104,69 @@ export async function POST(
           );
         }
       }
+
+      // Automatically track to Medical Timeline
+      const eventDate = rec.date_iso || new Date().toISOString().slice(0, 10);
+      const docNameStr = typeof rec.doctor === "string" ? rec.doctor : rec.doctor?.name || "Attending Physician";
+      const hospNameStr = rec.hospital || "Medical Centre";
+      const refId = `HMS-RX-${id}`;
+
+      try {
+        await query(
+          `INSERT INTO patient_timeline_events (
+            patient_id, user_id, event_date, category, title, description,
+            source, reliability, verification_status, facility, doctor, reference_id,
+            is_conflicting, conflict_details
+          ) VALUES ($1, $2, $3, 'Medication', $4, $5, 'Hospital HMS', 'High', 'Hospital Verified', $6, $7, $8, false, null);`,
+          [
+            patientId || "483027156",
+            userId,
+            eventDate,
+            `Prescription Verified: ${medSummary || "Clinical Rx"}`,
+            docSummary,
+            hospNameStr,
+            docNameStr,
+            refId,
+          ]
+        );
+      } catch (tlErr) {
+        console.warn("Could not auto-add to timeline_events:", tlErr);
+      }
+
+      // Automatically track each medicine to Recorded Medicines
+      if (Array.isArray(rec.medicines)) {
+        for (const med of rec.medicines) {
+          const medName = med.name || "Prescribed Medicine";
+          const medStrength = med.strength || med.dose || "";
+          const medFreq = med.frequency || "Once daily";
+          const medRoute = med.route || "Oral";
+          const indication = rec.diagnosis || "Therapeutic management";
+
+          try {
+            await query(
+              `INSERT INTO patient_medications (
+                patient_id, user_id, name, strength, status, indication,
+                frequency, route, start_date, doctor, reference_id,
+                is_conflicting, conflict_details, source, reliability, verification_status
+              ) VALUES ($1, $2, $3, $4, 'ACTIVE', $5, $6, $7, $8, $9, $10, false, null, 'Hospital HMS', 'High', 'Hospital Verified');`,
+              [
+                patientId || "483027156",
+                userId,
+                medName,
+                medStrength,
+                indication,
+                medFreq,
+                medRoute,
+                eventDate,
+                docNameStr,
+                refId,
+              ]
+            );
+          } catch (medErr) {
+            console.warn("Could not auto-add to patient_medications:", medErr);
+          }
+        }
+      }
     } catch (dbErr) {
       console.warn("Could not update/mirror confirmed prescription to Document table:", dbErr);
     }

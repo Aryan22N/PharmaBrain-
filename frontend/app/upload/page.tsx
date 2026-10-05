@@ -178,11 +178,13 @@ export default function UploadPage() {
     const timerInterval = setInterval(() => {
       setElapsedSeconds((prev) => {
         const next = prev + 1;
-        if (next >= 1 && next < 3) {
+        if (next < 2) {
+          setStep("uploading");
+        } else if (next >= 2 && next < 8) {
           setStep("ocr");
-        } else if (next >= 3 && next < 5) {
+        } else if (next >= 8 && next < 18) {
           setStep("structuring");
-        } else if (next >= 5) {
+        } else {
           setStep("finalizing");
         }
         return next;
@@ -516,42 +518,51 @@ export default function UploadPage() {
                       Prescription Pipeline Running ({elapsedSeconds}s elapsed)
                     </h4>
                     <p className="text-[11px] text-slate-500">
-                      Executing neural text extraction & clinical entity structuring...
+                      {step === "uploading" && "Optimizing image resolution & contrast enhancement..."}
+                      {step === "ocr" && "PaddleOCR Neural Engine extracting text boxes & reading order..."}
+                      {step === "structuring" && "Gemini AI structuring medications, dosages, vitals & conditions..."}
+                      {step === "finalizing" && "Cross-referencing Drug Master & saving to Patient Summary..."}
                     </p>
                   </div>
                 </div>
 
                 <span className="px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-800 font-mono text-xs font-bold border border-teal-200">
-                  {step === "uploading" ? "25%" : step === "ocr" ? "60%" : step === "structuring" ? "85%" : "95%"}
+                  {step === "uploading"
+                    ? `${Math.min(25, 12 + elapsedSeconds * 6)}%`
+                    : step === "ocr"
+                    ? `${Math.min(60, 25 + (elapsedSeconds - 2) * 6)}%`
+                    : step === "structuring"
+                    ? `${Math.min(88, 60 + (elapsedSeconds - 8) * 3)}%`
+                    : `${Math.min(97, 88 + (elapsedSeconds - 18) * 1)}%`}
                 </span>
               </div>
 
               {/* Steps Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                <div className={`p-2.5 rounded-xl border ${step === "uploading" ? "bg-teal-50 border-teal-300 text-teal-900" : "bg-slate-50 border-slate-200 text-slate-500"}`}>
+                <div className={`p-2.5 rounded-xl border ${step === "uploading" ? "bg-teal-50 border-teal-300 text-teal-900" : "bg-emerald-50 border-emerald-300 text-emerald-800"}`}>
                   <div className="font-bold flex items-center gap-1.5 mb-0.5">
                     1. Preprocess
                   </div>
-                  <div className="text-[10px] text-slate-400">EXIF & contrast</div>
+                  <div className="text-[10px] text-slate-400">1280px scaling</div>
                 </div>
 
                 <div className={`p-2.5 rounded-xl border ${step === "ocr" ? "bg-teal-50 border-teal-300 text-teal-900" : step === "structuring" || step === "finalizing" || step === "success" ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-slate-50 border-slate-200 text-slate-400"}`}>
                   <div className="font-bold flex items-center gap-1.5 mb-0.5">
-                    2. PaddleOCR (~2s)
+                    2. PaddleOCR
                   </div>
                   <div className="text-[10px] text-slate-400">Line bounding boxes</div>
                 </div>
 
                 <div className={`p-2.5 rounded-xl border ${step === "structuring" ? "bg-teal-50 border-teal-300 text-teal-900" : step === "finalizing" || step === "success" ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-slate-50 border-slate-200 text-slate-400"}`}>
                   <div className="font-bold flex items-center gap-1.5 mb-0.5">
-                    3. Gemini 3.5
+                    3. Gemini AI
                   </div>
                   <div className="text-[10px] text-slate-400">Clinical entities</div>
                 </div>
 
                 <div className={`p-2.5 rounded-xl border ${step === "finalizing" ? "bg-teal-50 border-teal-300 text-teal-900" : "bg-slate-50 border-slate-200 text-slate-400"}`}>
                   <div className="font-bold flex items-center gap-1.5 mb-0.5">
-                    4. Safety Check
+                    4. Safety & Sync
                   </div>
                   <div className="text-[10px] text-slate-400">Drug Master verify</div>
                 </div>
@@ -562,7 +573,14 @@ export default function UploadPage() {
                 <div
                   className="h-full bg-[#008080] transition-all duration-500 ease-out"
                   style={{
-                    width: step === "uploading" ? "25%" : step === "ocr" ? "60%" : step === "structuring" ? "85%" : "95%",
+                    width:
+                      step === "uploading"
+                        ? `${Math.min(25, 12 + elapsedSeconds * 6)}%`
+                        : step === "ocr"
+                        ? `${Math.min(60, 25 + (elapsedSeconds - 2) * 6)}%`
+                        : step === "structuring"
+                        ? `${Math.min(88, 60 + (elapsedSeconds - 8) * 3)}%`
+                        : `${Math.min(97, 88 + (elapsedSeconds - 18) * 1)}%`,
                   }}
                 />
               </div>

@@ -37,6 +37,7 @@ import {
   Search,
   Filter,
   FileImage,
+  Edit3,
 } from "lucide-react";
 import {
   ExtractionPayload,
@@ -69,6 +70,54 @@ export default function PatientDashboard() {
     historyCoverage: "70%",
   });
   const [documents, setDocuments] = useState<any[]>([]);
+  const [timelineEvents, setTimelineEvents] = useState<any[]>([]);
+  const [recordedMedicines, setRecordedMedicines] = useState<any[]>([]);
+
+  // Timeline filters
+  const [timelineSearch, setTimelineSearch] = useState<string>("");
+  const [timelineSourceFilter, setTimelineSourceFilter] = useState<string>("ALL");
+  const [timelineCategoryFilter, setTimelineCategoryFilter] = useState<string>("ALL");
+
+  // Medicines filters & state
+  const [medicinesTab, setMedicinesTab] = useState<"ACTIVE" | "ALL">("ACTIVE");
+
+  // Add Timeline Entry Modal state
+  const [addTimelineModalOpen, setAddTimelineModalOpen] = useState(false);
+  const [submittingTimeline, setSubmittingTimeline] = useState(false);
+  const [newTimeline, setNewTimeline] = useState({
+    event_date: new Date().toISOString().split("T")[0],
+    category: "Symptom Report",
+    title: "",
+    description: "",
+    source: "Manual Entry",
+    facility: "Patient Home Portal",
+    doctor: "Rahul Sharma (Patient Self-Report)",
+    reliability: "Low",
+    verification_status: "Patient Confirmed",
+    reference_id: "",
+    is_conflicting: false,
+    conflict_details: "",
+  });
+
+  // Add Medicine Modal state
+  const [addMedicineModalOpen, setAddMedicineModalOpen] = useState(false);
+  const [submittingMedicine, setSubmittingMedicine] = useState(false);
+  const [newMedicine, setNewMedicine] = useState({
+    name: "",
+    strength: "",
+    status: "ACTIVE",
+    indication: "",
+    frequency: "Once daily",
+    route: "Oral",
+    start_date: new Date().toISOString().split("T")[0],
+    doctor: "Dr. Priya Deshmukh",
+    reference_id: "",
+    source: "Hospital HMS",
+    reliability: "High",
+    verification_status: "Hospital Verified",
+    is_conflicting: false,
+    conflict_details: "",
+  });
 
   const [activeTab, setActiveTab] = useState("Overview");
   const [portalMode, setPortalMode] = useState<"patient" | "doctor">("patient");
@@ -95,7 +144,7 @@ export default function PatientDashboard() {
   const [confirming, setConfirming] = useState(false);
   const [discarding, setDiscarding] = useState(false);
 
-  // Load User Profile and Dynamic Data from Neon Database
+  // Load User Profile and Dynamic Data from Neon / Supabase Database
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
@@ -119,11 +168,99 @@ export default function PatientDashboard() {
         setUserData(data.user);
         if (data.metrics) setMetrics(data.metrics);
         if (data.documents) setDocuments(data.documents);
+        if (data.timelineEvents) setTimelineEvents(data.timelineEvents);
+        if (data.recordedMedicines) setRecordedMedicines(data.recordedMedicines);
       }
     } catch (err) {
       console.error("Failed to load dashboard data:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddTimeline = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTimeline.title.trim()) return;
+    try {
+      setSubmittingTimeline(true);
+      const token = localStorage.getItem("auth_token") || DEMO_JWT;
+      const res = await fetch("/api/patient/timeline", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(newTimeline),
+      });
+      const resData = await res.json();
+      if (resData.success) {
+        setAddTimelineModalOpen(false);
+        setNewTimeline({
+          event_date: new Date().toISOString().split("T")[0],
+          category: "Symptom Report",
+          title: "",
+          description: "",
+          source: "Manual Entry",
+          facility: "Patient Home Portal",
+          doctor: "Rahul Sharma (Patient Self-Report)",
+          reliability: "Low",
+          verification_status: "Patient Confirmed",
+          reference_id: "",
+          is_conflicting: false,
+          conflict_details: "",
+        });
+        await fetchDashboardData();
+      } else {
+        alert(resData.error || "Failed to save timeline entry");
+      }
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    } finally {
+      setSubmittingTimeline(false);
+    }
+  };
+
+  const handleAddMedicine = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMedicine.name.trim()) return;
+    try {
+      setSubmittingMedicine(true);
+      const token = localStorage.getItem("auth_token") || DEMO_JWT;
+      const res = await fetch("/api/patient/medicines", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(newMedicine),
+      });
+      const resData = await res.json();
+      if (resData.success) {
+        setAddMedicineModalOpen(false);
+        setNewMedicine({
+          name: "",
+          strength: "",
+          status: "ACTIVE",
+          indication: "",
+          frequency: "Once daily",
+          route: "Oral",
+          start_date: new Date().toISOString().split("T")[0],
+          doctor: "Dr. Priya Deshmukh",
+          reference_id: "",
+          source: "Hospital HMS",
+          reliability: "High",
+          verification_status: "Hospital Verified",
+          is_conflicting: false,
+          conflict_details: "",
+        });
+        await fetchDashboardData();
+      } else {
+        alert(resData.error || "Failed to save medicine record");
+      }
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    } finally {
+      setSubmittingMedicine(false);
     }
   };
 
@@ -259,6 +396,25 @@ export default function PatientDashboard() {
   const legacyPatientCode = userData?.legacyPatientId || null;
   const userEmail = userData?.email || "rahul.sharma@example.com";
 
+  const filteredTimeline = timelineEvents.filter((ev) => {
+    if (timelineSourceFilter !== "ALL" && ev.source !== timelineSourceFilter) {
+      return false;
+    }
+    if (timelineCategoryFilter !== "ALL" && ev.category !== timelineCategoryFilter) {
+      return false;
+    }
+    if (timelineSearch.trim()) {
+      const q = timelineSearch.toLowerCase();
+      const titleMatch = ev.title?.toLowerCase().includes(q);
+      const descMatch = ev.description?.toLowerCase().includes(q);
+      const docMatch = ev.doctor?.toLowerCase().includes(q);
+      const facMatch = ev.facility?.toLowerCase().includes(q);
+      const refMatch = ev.reference_id?.toLowerCase().includes(q);
+      return titleMatch || descMatch || docMatch || facMatch || refMatch;
+    }
+    return true;
+  });
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f4f7f6] flex flex-col items-center justify-center p-4">
@@ -377,9 +533,17 @@ export default function PatientDashboard() {
                 { name: "Overview", icon: LayoutDashboard },
                 { name: "Patient Summary", icon: FileCheck, badge: `${documents.length} docs` },
                 { name: "Documents", icon: FileText },
-                { name: "Medical Timeline", icon: Clock, badge: "1 conflict" },
+                {
+                  name: "Medical Timeline",
+                  icon: Clock,
+                  badge: timelineEvents.some((e) => e.is_conflicting) ? "1 conflict" : undefined,
+                },
                 { name: "Health Trends", icon: TrendingUp },
-                { name: "Medicines", icon: Pill },
+                {
+                  name: "Medicines",
+                  icon: Pill,
+                  badge: `${recordedMedicines.filter((m) => m.status === "ACTIVE").length || 2} active`,
+                },
                 { name: "Symptoms & Side Effects", icon: AlertCircle },
                 { name: "Share Records", icon: Share2 },
                 { name: "HMS Integration", icon: Database },
@@ -568,10 +732,8 @@ export default function PatientDashboard() {
                 <p className="text-[10px] text-teal-600 font-medium mt-0.5">Good baseline</p>
               </div>
             </div>
-          </div>
-
-          {/* Dedicated Tab: Patient Summary */}
-          {activeTab === "Patient Summary" ? (
+          </div>          {/* Tab 1: Patient Summary */}
+          {activeTab === "Patient Summary" && (
             <div className="space-y-6">
               <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
@@ -750,8 +912,440 @@ export default function PatientDashboard() {
                   })}
               </div>
             </div>
-          ) : (
-            /* Standard Tab: Overview */
+          )}
+
+          {/* Tab 2: Longitudinal Medical Timeline */}
+          {activeTab === "Medical Timeline" && (
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2.5 mb-1.5">
+                    <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+                      Longitudinal Medical Timeline
+                    </h2>
+                    <span className="bg-[#ccfbf1]/80 text-[#0f766e] text-xs font-bold px-3 py-1 rounded-full border border-[#99f6e4]">
+                      2019 – September 2026
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Chronological audit trail with independent Source, Reliability, and Verification classifications.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="text-xs text-slate-600 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-xl font-medium shadow-2xs">
+                    Showing <strong className="text-slate-900 font-bold">{filteredTimeline.length}</strong> of{" "}
+                    <strong className="text-slate-900 font-bold">{timelineEvents.length}</strong> records
+                  </span>
+                  <button
+                    onClick={() => setAddTimelineModalOpen(true)}
+                    className="flex items-center gap-1.5 bg-[#008080] hover:bg-[#006666] text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-xs transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>Add Note</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Active Clinical Discrepancy Flagged Callout Banner */}
+              {timelineEvents.some((ev) => ev.is_conflicting) && (
+                <div className="bg-[#fffbeb] border border-[#fde68a] p-5 rounded-2xl space-y-2 shadow-xs">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+                    <span className="font-extrabold text-slate-900 text-sm sm:text-base tracking-tight">
+                      Active Clinical Discrepancy Flagged
+                    </span>
+                    <span className="bg-[#fef3c7] text-[#b45309] text-[10px] font-extrabold px-2.5 py-0.5 rounded-md border border-amber-300 tracking-wider">
+                      SAFETY PRIORITY
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-700 leading-relaxed">
+                    Conflicting information detected — Hospital HMS record is shown as the higher-priority source. The patient-entered record has been retained for history.
+                  </p>
+                  <p className="text-xs font-semibold text-amber-900">
+                    HMS Reference: Metformin 500 mg BID (10 Sep 2026) vs Patient Self-Entry: Metformin 1000 mg (11 Sep 2026).
+                  </p>
+                </div>
+              )}
+
+              {/* Search & Filter Toolbar */}
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row gap-3 items-center justify-between">
+                <div className="relative w-full md:flex-1">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={timelineSearch}
+                    onChange={(e) => setTimelineSearch(e.target.value)}
+                    placeholder="Search records by title, doctor, facility, or original reference..."
+                    className="w-full pl-9 pr-8 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 focus:bg-white transition-all text-slate-800"
+                  />
+                  {timelineSearch && (
+                    <button
+                      onClick={() => setTimelineSearch("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2.5 w-full md:w-auto shrink-0">
+                  <div className="flex items-center gap-1.5">
+                    <Filter className="w-3.5 h-3.5 text-slate-400" />
+                    <select
+                      value={timelineSourceFilter}
+                      onChange={(e) => setTimelineSourceFilter(e.target.value)}
+                      className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 font-medium focus:outline-none focus:border-teal-500 cursor-pointer"
+                    >
+                      <option value="ALL">All Sources</option>
+                      <option value="Hospital HMS">Hospital HMS</option>
+                      <option value="Manual Entry">Manual Entry</option>
+                      <option value="Diagnostic Lab">Diagnostic Lab</option>
+                      <option value="Patient Home Portal">Patient Home Portal</option>
+                    </select>
+                  </div>
+
+                  <select
+                    value={timelineCategoryFilter}
+                    onChange={(e) => setTimelineCategoryFilter(e.target.value)}
+                    className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 font-medium focus:outline-none focus:border-teal-500 cursor-pointer"
+                  >
+                    <option value="ALL">All Categories</option>
+                    <option value="Symptom Report">Symptom Report</option>
+                    <option value="Medication">Medication</option>
+                    <option value="Diagnosis">Diagnosis</option>
+                    <option value="Lab Result">Lab Result</option>
+                    <option value="Hospitalization">Hospitalization</option>
+                    <option value="Clinical Note">Clinical Note</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Vertical Timeline Tree */}
+              <div className="relative pl-6 sm:pl-9 space-y-5 before:absolute before:left-3 sm:before:left-4 before:top-4 before:bottom-4 before:w-0.5 before:bg-slate-200">
+                {filteredTimeline.length === 0 ? (
+                  <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-500 text-xs">
+                    No timeline events match your search or filter criteria.
+                  </div>
+                ) : (
+                  filteredTimeline.map((ev, idx) => {
+                    const isConflicting = ev.is_conflicting;
+                    return (
+                      <div key={ev.id || idx} className="relative group">
+                        {/* Timeline Node Icon on vertical line */}
+                        <div
+                          className={`absolute -left-6 sm:-left-9 top-5 w-6 h-6 rounded-full bg-white border-2 flex items-center justify-center shadow-xs transition-transform group-hover:scale-110 z-10 ${
+                            isConflicting
+                              ? "border-amber-500 text-amber-500"
+                              : "border-[#008080] text-[#008080]"
+                          }`}
+                        >
+                          <div
+                            className={`w-2 h-2 rounded-full ${
+                              isConflicting ? "bg-amber-500" : "bg-[#008080]"
+                            }`}
+                          />
+                        </div>
+
+                        {/* Timeline Card */}
+                        <div
+                          className={`p-5 rounded-2xl transition-all shadow-xs ${
+                            isConflicting
+                              ? "bg-white border-2 border-amber-300 shadow-amber-50"
+                              : "bg-white border border-slate-200/80 hover:border-teal-400 hover:shadow-md"
+                          }`}
+                        >
+                          {/* Top Badges Row */}
+                          <div className="flex flex-wrap items-center justify-between gap-2.5 pb-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                                {ev.event_date ? new Date(ev.event_date).toISOString().split("T")[0] : "Recent"}
+                              </span>
+                              <span className="bg-slate-100 text-slate-700 text-xs font-semibold px-2.5 py-0.5 rounded-lg border border-slate-200">
+                                {ev.category}
+                              </span>
+                              {isConflicting && (
+                                <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-0.5 rounded-lg border border-amber-300 inline-flex items-center gap-1">
+                                  <AlertTriangle className="w-3 h-3 text-amber-600" />
+                                  Conflicting Information
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Provenance Pills */}
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium bg-slate-50 text-slate-700 rounded-lg border border-slate-200">
+                                <Edit3 className="w-3 h-3 text-slate-400" />
+                                {ev.source}
+                              </span>
+                              <span
+                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium rounded-lg border ${
+                                  ev.reliability === "High"
+                                    ? "bg-teal-50 text-teal-700 border-teal-200"
+                                    : "bg-slate-50 text-slate-700 border-slate-200"
+                                }`}
+                              >
+                                <ShieldCheck className="w-3 h-3 text-teal-600" />
+                                Reliability: {ev.reliability}
+                              </span>
+                              <span
+                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-bold rounded-lg border ${
+                                  isConflicting
+                                    ? "bg-amber-50 text-amber-800 border-amber-300"
+                                    : "bg-blue-50 text-blue-700 border-blue-200"
+                                }`}
+                              >
+                                {isConflicting ? (
+                                  <AlertTriangle className="w-3 h-3 text-amber-600" />
+                                ) : (
+                                  <Check className="w-3 h-3 text-blue-600" />
+                                )}
+                                {ev.verification_status}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Event Title */}
+                          <h3 className="text-base font-extrabold text-slate-900 mt-1">
+                            {ev.title}
+                          </h3>
+
+                          {/* Description */}
+                          {ev.description && (
+                            <p className="text-xs text-slate-600 leading-relaxed mt-1.5">
+                              {ev.description}
+                            </p>
+                          )}
+
+                          {/* Conflict Callout Details */}
+                          {isConflicting && ev.conflict_details && (
+                            <div className="mt-3 p-3 bg-amber-50/70 border border-amber-200 rounded-xl text-xs text-amber-900 space-y-1">
+                              <span className="font-bold flex items-center gap-1 text-amber-950">
+                                <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                                Discrepancy Note:
+                              </span>
+                              <p className="text-xs text-amber-800 leading-relaxed">
+                                {ev.conflict_details}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Bottom Row: Source Facility & Ref */}
+                          <div className="flex flex-wrap items-center justify-between gap-2 mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500">
+                            <div className="flex items-center gap-2">
+                              <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                              <span>{ev.facility || "City Care Health"}</span>
+                              {ev.doctor && (
+                                <>
+                                  <span className="text-slate-300">•</span>
+                                  <span>{ev.doctor}</span>
+                                </>
+                              )}
+                            </div>
+                            {ev.reference_id && (
+                              <span className="font-mono text-[11px] text-slate-500 font-semibold bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+                                Ref: {ev.reference_id}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Tab 3: Current Recorded Medicines */}
+          {activeTab === "Medicines" && (
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2.5 mb-1.5">
+                    <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+                      Current Recorded Medicines
+                    </h2>
+                    <span className="bg-[#ccfbf1]/80 text-[#0f766e] text-xs font-bold px-3 py-1 rounded-full border border-[#99f6e4]">
+                      {recordedMedicines.filter((m) => m.status === "ACTIVE").length} Active Prescriptions
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Reconciled medication list with source attribution, prescribing physician, and original reference identifiers.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0">
+                  {/* Active Regimen / All Historical toggle buttons */}
+                  <div className="bg-slate-100 p-1 rounded-xl border border-slate-200 flex items-center gap-1">
+                    <button
+                      onClick={() => setMedicinesTab("ACTIVE")}
+                      className={`px-3 py-1.5 text-xs rounded-lg transition-all ${
+                        medicinesTab === "ACTIVE"
+                          ? "bg-white text-slate-900 font-extrabold shadow-xs"
+                          : "text-slate-600 hover:text-slate-900 font-medium"
+                      }`}
+                    >
+                      Active Regimen ({recordedMedicines.filter((m) => m.status === "ACTIVE").length})
+                    </button>
+                    <button
+                      onClick={() => setMedicinesTab("ALL")}
+                      className={`px-3 py-1.5 text-xs rounded-lg transition-all ${
+                        medicinesTab === "ALL"
+                          ? "bg-white text-slate-900 font-extrabold shadow-xs"
+                          : "text-slate-600 hover:text-slate-900 font-medium"
+                      }`}
+                    >
+                      All Historical ({recordedMedicines.length})
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => setAddMedicineModalOpen(true)}
+                    className="flex items-center gap-1.5 bg-[#008080] hover:bg-[#006666] text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-xs transition-colors shrink-0"
+                  >
+                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>Add Medicine</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Medication Dosage Discrepancy Flagged Callout Banner */}
+              {recordedMedicines.some((m) => m.is_conflicting) && (
+                <div className="bg-[#fffbeb] border border-[#fde68a] p-5 rounded-2xl space-y-1.5 shadow-xs">
+                  <div className="flex items-center gap-2.5">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+                    <span className="font-extrabold text-slate-900 text-sm tracking-tight">
+                      Medication Dosage Discrepancy Flagged
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-700 leading-relaxed">
+                    Conflicting information detected — Hospital HMS record is shown as the higher-priority source. The patient-entered record has been retained for history.
+                  </p>
+                  <p className="text-xs font-semibold text-amber-900">
+                    Prescribed: Metformin 500 mg BID (Dr. Priya Deshmukh) vs Patient manual note: 1000 mg.
+                  </p>
+                </div>
+              )}
+
+              {/* 2-Column Responsive Cards Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {recordedMedicines
+                  .filter((m) => (medicinesTab === "ACTIVE" ? m.status === "ACTIVE" : true))
+                  .map((med, idx) => {
+                    const isConflicting = med.is_conflicting;
+                    const isActive = med.status === "ACTIVE";
+
+                    return (
+                      <div
+                        key={med.id || idx}
+                        className={`rounded-2xl p-5 shadow-xs transition-all space-y-4 ${
+                          isConflicting
+                            ? "bg-white border-2 border-amber-300 hover:border-amber-400"
+                            : isActive
+                            ? "bg-white border border-slate-200/80 hover:border-teal-400 hover:shadow-md"
+                            : "bg-slate-50/70 border border-slate-200 opacity-90"
+                        }`}
+                      >
+                        {/* Top Header Row */}
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-base font-extrabold text-slate-900">
+                                {med.name}
+                              </h3>
+                              {med.strength && (
+                                <span className="bg-teal-50 text-teal-800 border border-teal-200 font-bold text-xs px-2.5 py-0.5 rounded-lg font-mono">
+                                  {med.strength}
+                                </span>
+                              )}
+                            </div>
+                            {med.indication && (
+                              <p className="text-xs text-slate-500 mt-1">
+                                {med.indication}
+                              </p>
+                            )}
+                          </div>
+
+                          <span
+                            className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-md uppercase tracking-wider shrink-0 ${
+                              isActive
+                                ? "bg-teal-50 text-teal-700 border border-teal-200"
+                                : "bg-slate-100 text-slate-600 border border-slate-200"
+                            }`}
+                          >
+                            {med.status}
+                          </span>
+                        </div>
+
+                        {/* Schedule Box */}
+                        <div className="bg-[#f8fafc] border border-slate-200/70 rounded-xl p-3 text-xs text-slate-700 space-y-2">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <span>
+                              <strong className="text-slate-800">Frequency:</strong> {med.frequency || "As prescribed"}
+                            </span>
+                            <span className="text-slate-500">
+                              <strong className="text-slate-800">Route:</strong> {med.route || "Oral"}
+                            </span>
+                          </div>
+                          {med.start_date && (
+                            <div className="flex items-center gap-1.5 text-slate-500 text-[11px]">
+                              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                              <span>
+                                Start Date: {new Date(med.start_date).toISOString().split("T")[0]}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Prescribing Doctor & Reference */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
+                          <div className="flex items-center gap-1.5">
+                            <Stethoscope className="w-3.5 h-3.5 text-slate-400" />
+                            <span>{med.doctor || "Attending Physician"}</span>
+                          </div>
+                          {med.reference_id && (
+                            <div className="flex items-center gap-1.5 font-mono text-[11px] text-slate-500">
+                              <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                              <span>{med.reference_id}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* In-Card Discrepancy Callout if Conflicting */}
+                        {isConflicting && (
+                          <div className="p-3 bg-[#fffbeb] border border-[#fde68a] rounded-xl text-xs text-amber-900 leading-relaxed">
+                            {med.conflict_details ||
+                              "Conflicting information detected — Hospital HMS record is shown as the higher-priority source. The patient-entered record has been retained for history."}
+                          </div>
+                        )}
+
+                        {/* Provenance Pills */}
+                        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-sky-50 text-sky-700 border border-sky-200 px-2.5 py-0.5 rounded-lg">
+                            <Building2 className="w-3 h-3 text-sky-600" />
+                            {med.source || "Hospital HMS"}
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-teal-50 text-teal-700 border border-teal-200 px-2.5 py-0.5 rounded-lg">
+                            <ShieldCheck className="w-3 h-3 text-teal-600" />
+                            Reliability: {med.reliability || "High"}
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-teal-50 text-teal-700 border border-teal-200 px-2.5 py-0.5 rounded-lg">
+                            <CheckCircle2 className="w-3 h-3 text-teal-600" />
+                            {med.verification_status || "Hospital Verified"}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* Tab 4: Overview (Default Fallback) */}
+          {activeTab !== "Patient Summary" && activeTab !== "Medical Timeline" && activeTab !== "Medicines" && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Longitudinal Care Summary & Saved Documents */}
               <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
@@ -832,7 +1426,7 @@ export default function PatientDashboard() {
                                 {meds.slice(0, 3).map((m: any, mIdx: number) => (
                                   <span
                                     key={mIdx}
-                                    className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold bg-white text-slate-700 rounded border border-slate-200 shadow-2xs"
+                                    className="inline-flex items-center gap-1 px-2.5 py-0.5 text-[10px] font-semibold bg-white text-slate-700 rounded border border-slate-200 shadow-2xs"
                                   >
                                     <Pill className="w-3 h-3 text-teal-600" />
                                     {typeof m === "string"
@@ -1574,6 +2168,349 @@ export default function PatientDashboard() {
                 )}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Add Timeline Note */}
+      {addTimelineModalOpen && (
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-lg overflow-y-auto max-h-[90vh] shadow-2xl border border-slate-200 p-6 sm:p-7 space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Clock className="w-5 h-5 text-[#008080]" />
+                <h3 className="text-base font-extrabold text-slate-900">
+                  Add Timeline Note / Self-Report
+                </h3>
+              </div>
+              <button
+                onClick={() => setAddTimelineModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddTimeline} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    Event Date *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={newTimeline.event_date}
+                    onChange={(e) => setNewTimeline({ ...newTimeline, event_date: e.target.value })}
+                    className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    Category *
+                  </label>
+                  <select
+                    value={newTimeline.category}
+                    onChange={(e) => setNewTimeline({ ...newTimeline, category: e.target.value })}
+                    className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500"
+                  >
+                    <option value="Symptom Report">Symptom Report</option>
+                    <option value="Medication">Medication</option>
+                    <option value="Diagnosis">Diagnosis</option>
+                    <option value="Lab Result">Lab Result</option>
+                    <option value="Clinical Note">Clinical Note</option>
+                    <option value="Hospitalization">Hospitalization</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  Title / Event Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Patient Symptom Note: Morning Dizziness"
+                  value={newTimeline.title}
+                  onChange={(e) => setNewTimeline({ ...newTimeline, title: e.target.value })}
+                  className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  Clinical Description
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Describe symptoms, medication adjustments, or clinical observations..."
+                  value={newTimeline.description}
+                  onChange={(e) => setNewTimeline({ ...newTimeline, description: e.target.value })}
+                  className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    Source
+                  </label>
+                  <select
+                    value={newTimeline.source}
+                    onChange={(e) => setNewTimeline({ ...newTimeline, source: e.target.value })}
+                    className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500"
+                  >
+                    <option value="Manual Entry">Manual Entry</option>
+                    <option value="Patient Home Portal">Patient Home Portal</option>
+                    <option value="Hospital HMS">Hospital HMS</option>
+                    <option value="Diagnostic Lab">Diagnostic Lab</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    Reliability
+                  </label>
+                  <select
+                    value={newTimeline.reliability}
+                    onChange={(e) => setNewTimeline({ ...newTimeline, reliability: e.target.value })}
+                    className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500"
+                  >
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    Facility / Portal
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Patient Home Portal"
+                    value={newTimeline.facility}
+                    onChange={(e) => setNewTimeline({ ...newTimeline, facility: e.target.value })}
+                    className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    Reference ID (optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. PATIENT-SYMPTOM-2026-10"
+                    value={newTimeline.reference_id}
+                    onChange={(e) => setNewTimeline({ ...newTimeline, reference_id: e.target.value })}
+                    className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setAddTimelineModalOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingTimeline}
+                  className="px-5 py-2 text-xs font-bold text-white bg-[#008080] hover:bg-[#006666] rounded-xl shadow-xs transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {submittingTimeline ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-3.5 h-3.5 stroke-[2.5]" /> Save Event
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Add Medicine */}
+      {addMedicineModalOpen && (
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-lg overflow-y-auto max-h-[90vh] shadow-2xl border border-slate-200 p-6 sm:p-7 space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Pill className="w-5 h-5 text-[#008080]" />
+                <h3 className="text-base font-extrabold text-slate-900">
+                  Add Recorded Medication
+                </h3>
+              </div>
+              <button
+                onClick={() => setAddMedicineModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddMedicine} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    Medicine Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Atorvastatin Calcium"
+                    value={newMedicine.name}
+                    onChange={(e) => setNewMedicine({ ...newMedicine, name: e.target.value })}
+                    className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    Strength / Dose *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 20 mg"
+                    value={newMedicine.strength}
+                    onChange={(e) => setNewMedicine({ ...newMedicine, strength: e.target.value })}
+                    className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    Status *
+                  </label>
+                  <select
+                    value={newMedicine.status}
+                    onChange={(e) => setNewMedicine({ ...newMedicine, status: e.target.value })}
+                    className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500"
+                  >
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="DISCONTINUED">DISCONTINUED</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    Route
+                  </label>
+                  <select
+                    value={newMedicine.route}
+                    onChange={(e) => setNewMedicine({ ...newMedicine, route: e.target.value })}
+                    className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500"
+                  >
+                    <option value="Oral">Oral</option>
+                    <option value="Subcutaneous">Subcutaneous</option>
+                    <option value="Intravenous">Intravenous</option>
+                    <option value="Topical">Topical</option>
+                    <option value="Inhalation">Inhalation</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  Indication / Purpose
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Hyperlipidemia / Cholesterol Control"
+                  value={newMedicine.indication}
+                  onChange={(e) => setNewMedicine({ ...newMedicine, indication: e.target.value })}
+                  className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    Frequency
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Once daily at bedtime"
+                    value={newMedicine.frequency}
+                    onChange={(e) => setNewMedicine({ ...newMedicine, frequency: e.target.value })}
+                    className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    value={newMedicine.start_date}
+                    onChange={(e) => setNewMedicine({ ...newMedicine, start_date: e.target.value })}
+                    className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    Prescribing Doctor
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Dr. Priya Deshmukh"
+                    value={newMedicine.doctor}
+                    onChange={(e) => setNewMedicine({ ...newMedicine, doctor: e.target.value })}
+                    className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    Reference ID (optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. HMS-OPD-2026-RX"
+                    value={newMedicine.reference_id}
+                    onChange={(e) => setNewMedicine({ ...newMedicine, reference_id: e.target.value })}
+                    className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setAddMedicineModalOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingMedicine}
+                  className="px-5 py-2 text-xs font-bold text-white bg-[#008080] hover:bg-[#006666] rounded-xl shadow-xs transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {submittingMedicine ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-3.5 h-3.5 stroke-[2.5]" /> Save Medication
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
