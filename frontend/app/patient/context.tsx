@@ -64,12 +64,12 @@ export function PatientDashboardProvider({ children }: { children: React.ReactNo
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<any>(null);
   const [metrics, setMetrics] = useState<DashboardMetrics>({
-    totalRecords: 14,
-    hospitalVerified: 7,
-    activeMeds: 2,
-    lastHbA1c: "8.1%",
-    bloodPressure: "146/92 mmHg",
-    historyCoverage: "70%",
+    totalRecords: 0,
+    hospitalVerified: 0,
+    activeMeds: 0,
+    lastHbA1c: "--",
+    bloodPressure: "--",
+    historyCoverage: "0%",
   });
   const [documents, setDocuments] = useState<any[]>([]);
   const [timelineEvents, setTimelineEvents] = useState<any[]>([]);

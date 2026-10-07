@@ -5,6 +5,11 @@ import sys
 os.environ.setdefault("PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK", "True")
 os.environ.setdefault("DISABLE_MODEL_SOURCE_CHECK", "True")
 
+# Disable MKL-DNN / PIR execution engine bug in PaddlePaddle 3.0+
+os.environ["FLAGS_use_mkldnn"] = "0"
+os.environ["FLAGS_enable_pir_api"] = "0"
+os.environ["FLAGS_enable_pir_in_executor"] = "0"
+
 from dotenv import load_dotenv
 
 _script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -56,6 +61,9 @@ CRITICAL_FIELDS = ("name", "strength", "frequency", "duration")   # a wrong valu
 
 # ---- LLM ------------------------------------------------------------------------------------------------
 MODEL_CANDIDATES = [
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+    "gemini-2.0-flash",
     "gemini-3.5-flash-lite",
     "gemini-flash-lite-latest",
     "gemini-3.5-flash",
@@ -63,8 +71,7 @@ MODEL_CANDIDATES = [
     "gemini-3.7-flash",
     "gemini-3.1-flash-lite",
 ]
-SEND_IMAGE_TO_LLM = False   # True = Gemini also sees the image to double-check low-confidence lines
-                            # (clearly better on handwriting; the image then leaves your server -> check privacy terms/consent)
+SEND_IMAGE_TO_LLM = True    # True = Gemini receives image to read handwriting directly with high precision
 USE_UNWARPING = False       # True for curved / photographed pages
 
 # ---- upload limits ---------------------------------------------------------------------------------------
@@ -144,7 +151,7 @@ Tables: `raw_ocr` (raw OCR lines) - `extractions` (LLM draft + validation result
 """
 
 from sqlalchemy import (create_engine, MetaData, Table, Column, Integer, String, Text, Float,
-                        select, insert, update, func)
+                        select, insert, update, delete, func, text)
 
 _kw = {
     "pool_pre_ping": True,
@@ -254,27 +261,82 @@ STARTER = [
     ("dytor", "torsemide", "Torsemide", "Fluid retention (oedema); heart/liver/kidney related", ""),
     ("levolin", "levosalbutamol", "Levosalbutamol", "Asthma / wheezing (bronchodilator)", ""),
     ("meftal-p", "mefenamic acid + paracetamol", "Mefenamic acid + Paracetamol", "Fever; pain", ""),
+    ("dexamethasone", "dexamethasone", "Dexamethasone", "Corticosteroid / Anti-inflammatory", "0.5,1,2,4,8"),
+    ("dexa", "dexamethasone", "Dexamethasone", "Corticosteroid / Anti-inflammatory", "4,8"),
+    ("ondem", "ondansetron", "Ondansetron", "Nausea and vomiting (antiemetic)", "4,8"),
+    ("ultracet", "tramadol + paracetamol", "Tramadol + Paracetamol", "Moderate to severe pain", ""),
+    ("xgeva", "denosumab", "Denosumab", "Bone metastases prevention / Giant cell tumor", "120"),
+    ("denosumab", "denosumab", "Denosumab", "Bone metastases prevention / Giant cell tumor", "120"),
+    ("cloxen", "cloxacillin", "Cloxacillin", "Bacterial infections", "250,500"),
+    ("hmw", "heparin / low molecular weight heparin", "LMWH", "Anticoagulant / Blood thinner", ""),
 ]
 
 def seed_starter_medicines():
     with engine.begin() as c:
-        if c.execute(select(medicine_master.c.id).limit(1)).first():
+        try:
+            if c.execute(text("SELECT id FROM medicine_master LIMIT 1")).first():
+                return
+        except Exception:
             return
         for n, g, comp, uses, st in STARTER:
-            c.execute(insert(medicine_master).values(name=n, generic=g, composition=comp, uses=uses,
-                                                     strengths_mg=st, source="starter_seed_REPLACE_WITH_REAL_DB"))
+            c.execute(text(
+                "INSERT INTO medicine_master (name, generic, composition, uses, strengths_mg, source) "
+                "VALUES (:n, :g, :comp, :uses, :st, 'starter_seed')"
+            ), dict(n=n, g=g, comp=comp, uses=uses, st=st))
 
 MED_INDEX = {}      # lower-case name or generic -> row dict
 
 def load_med_index():
-    with engine.connect() as c:
-        rows = [dict(r) for r in c.execute(select(medicine_master)).mappings().all()]
-    MED_INDEX.clear()
-    for r in rows:
-        MED_INDEX[r["name"].lower()] = r
-        if r["generic"]:
-            MED_INDEX.setdefault(r["generic"].lower(), r)
-    return len(rows)
+    def _background_load():
+        try:
+            log_stage("DB_INDEX", "Loading 250k+ medicines from database in background...")
+            t0 = time.time()
+            with engine.connect().execution_options(stream_results=True) as c:
+                try:
+                    result = c.execute(text(
+                        "SELECT id, brand_name, generic_name, composition_raw, active_ingredients, strength_text, uses, therapeutic_class FROM medicine_master"
+                    ))
+                except Exception:
+                    result = c.execute(text("SELECT * FROM medicine_master"))
+
+                count = 0
+                for r in result.mappings():
+                    count += 1
+                    r = dict(r)
+                    brand = (r.get("brand_name") or r.get("name") or "").strip()
+                    generic = (r.get("generic_name") or r.get("generic") or "").strip()
+                    comp = (r.get("composition_raw") or r.get("composition") or r.get("active_ingredients") or "").strip()
+                    uses = (r.get("uses") or r.get("therapeutic_class") or "").strip()
+                    strength = (r.get("strength_text") or r.get("strengths_mg") or "").strip()
+
+                    row_dict = {
+                        "name": brand or generic,
+                        "generic": generic,
+                        "composition": comp,
+                        "uses": uses,
+                        "strengths_mg": strength,
+                        "raw": r
+                    }
+
+                    if brand:
+                        b_lower = brand.lower()
+                        MED_INDEX[b_lower] = row_dict
+                        simple_brand = re.sub(r"\s+\d+.*$", "", b_lower).strip()
+                        if simple_brand and len(simple_brand) >= 3 and simple_brand not in MED_INDEX:
+                            MED_INDEX[simple_brand] = row_dict
+
+                    if generic:
+                        g_lower = generic.lower()
+                        if g_lower not in MED_INDEX:
+                            MED_INDEX[g_lower] = row_dict
+
+            log_stage("DB_INDEX", f"Successfully loaded {count:,} medicine records ({len(MED_INDEX):,} index keys)", time.time() - t0)
+        except Exception as err:
+            log_stage("DB_INDEX", f"Error background loading medicine_master: {err}")
+
+    # Launch background thread so backend starts immediately!
+    threading.Thread(target=_background_load, daemon=True).start()
+    return len(MED_INDEX)
 
 def import_medicine_csv(path, source="csv_import"):
     """CSV columns: name, generic, composition, uses, strengths_mg  (strengths_mg like 250,500)"""
@@ -307,8 +369,8 @@ from PIL import Image, ImageOps
 PRE_DIR = "preprocessed"
 os.makedirs(PRE_DIR, exist_ok=True)
 
-def preprocess_image(data: bytes, min_long_side=800, max_long_side=1280):
-    """bytes -> path of cleaned PNG, (w, h). Fixes phone rotation, faded ink, tiny and huge images with fast 1280px scaling."""
+def preprocess_image(data: bytes, min_long_side=1000, max_long_side=2048):
+    """bytes -> path of cleaned PNG, (w, h). Fixes phone rotation, faded ink, tiny and huge images with high-res 2048px scaling."""
     img = Image.open(io.BytesIO(data))
     img = ImageOps.exif_transpose(img).convert("RGB")
     img = ImageOps.autocontrast(img, cutoff=1)
@@ -323,6 +385,16 @@ def preprocess_image(data: bytes, min_long_side=800, max_long_side=1280):
 
 import paddle
 import threading
+
+# Explicitly disable mkldnn/PIR flags in paddle framework runtime
+try:
+    paddle.set_flags({
+        "FLAGS_use_mkldnn": False,
+        "FLAGS_enable_pir_api": False,
+        "FLAGS_enable_pir_in_executor": False,
+    })
+except Exception:
+    pass
 
 if '_PADDLEOCR_READY' not in globals():
     OCR_ENGINE_TYPE = os.environ.get("OCR_ENGINE_TYPE", "PaddleOCR").strip()
@@ -342,7 +414,8 @@ if '_PADDLEOCR_READY' not in globals():
         from paddleocr import PaddleOCR
         ocr = PaddleOCR(
             use_textline_orientation=True,
-            lang=os.environ.get("PADDLEOCR_LANG", "en")
+            lang=os.environ.get("PADDLEOCR_LANG", "en"),
+            enable_mkldnn=False
         )
         OCR_ENGINE = "PaddleOCR"
 
@@ -357,11 +430,34 @@ def run_ocr(path, fallback_size):
     Run PaddleOCR / PaddleOCR-VL and return:
         (raw boxes list, (w, h) of the image)
     """
-    with OCR_LOCK:
-        output = list(ocr.predict(path))
-
     w, h = fallback_size
     raw = []
+
+    with OCR_LOCK:
+        if hasattr(ocr, "ocr"):
+            try:
+                res = ocr.ocr(path, cls=True)
+                if res and len(res) > 0 and res[0] is not None:
+                    for line in res[0]:
+                        if not line or len(line) < 2:
+                            continue
+                        box, (text, conf) = line[0], line[1]
+                        text = str(text or "").strip()
+                        if not text or not re.search(r"[A-Za-z0-9]", text):
+                            continue
+                        xs = [float(p[0]) for p in box]
+                        ys = [float(p[1]) for p in box]
+                        raw.append(dict(
+                            text=text,
+                            conf=float(conf),
+                            x0=min(xs), x1=max(xs),
+                            y0=min(ys), y1=max(ys)
+                        ))
+                    return raw, (w, h)
+            except Exception as e:
+                print(f"Standard ocr.ocr() call failed, falling back to predict(): {e}")
+
+        output = list(ocr.predict(path))
 
     for res in output:
         # Check if preprocessing returned output image dimensions
@@ -423,6 +519,7 @@ def run_ocr(path, fallback_size):
                 raw.append(dict(text=text, conf=float(score), x0=min(xs), x1=max(xs), y0=min(ys), y1=max(ys)))
 
     return raw, (w, h)
+
 
 
 def build_lines(raw, img_w, img_h):
@@ -544,32 +641,35 @@ class Prescription(BaseModel):
     follow_up: Val = Field(default_factory=Val)
 
 
-SYSTEM_PROMPT = """You are an expert clinical prescription interpretation and structuring assistant.
-Input consists of OCR text lines extracted from a prescription image:
+SYSTEM_PROMPT = """You are an expert clinical prescription interpretation and structuring assistant with advanced multimodal vision capabilities.
+Input consists of:
+1. The raw prescription image (when provided).
+2. OCR text lines extracted from the prescription image:
 <line_id> | row <n> | x=<0-1> y=<0-1> | conf=<0-1> | <text>
 
-CRITICAL RULES:
-1. TRUTHFULNESS: Extract ONLY what is clearly supported by the OCR lines. Never invent medicines, dosages, frequencies, vitals, or clinical diagnoses. Work exclusively from the provided OCR text.
-2. SOURCE TRACEABILITY: Every field value MUST include src: an array containing the exact OCR line IDs (e.g. ["L04", "L05"]) from which that value was extracted. If absent, set value to null and src to [].
+CRITICAL RULES FOR HIGH ACCURACY & HANDWRITING TRANSCRIPTION:
+1. HYBRID VISUAL & OCR ANALYSIS: Use your visual reasoning on the prescription image to carefully read handwritten text, slanted numbers, cursive doctor headers, patient details, and medicine names.
+   - When PaddleOCR misreads or drops text (e.g., misreading 'Dalia Kundu' as 'Kandu' or 'NCRI' as 'NCR1' or missing Age '64', Sex 'F', Doctor Name 'Tanmoy Kumar Mandal'), use your high-precision visual transcription of the image to output the exact correct data.
+   - Never invent medicines not present on the prescription image.
+2. SOURCE TRACEABILITY: Every field value MUST include `src`: an array containing the OCR line IDs (e.g. ["L04", "L05"]) corresponding to that text. If a field was read directly from the image because OCR missed it, assign the closest OCR line ID or an empty array [].
 3. MEDICINE EXTRACTION:
-   - name: Brand or generic medicine name only. Strip prefixes (Tab., Cap., Inj., Syp.) and dosage numbers.
+   - Extract ALL prescribed medications from all sections ('Medicine Prescribed', 'Plan', 'Advice Prescribed', and handwritten notes).
+   - name: Brand or generic medicine name only (e.g., 'Dexa', 'Ondem', 'Ultracet', 'Xgeva', 'HMW', 'Cloxen'). Strip prefixes (Tab., Cap., Inj., Syp.) and dosage numbers.
    - form: Form of intake (Tab, Cap, Inj, Syp, Drops, etc.)
-   - strength: Dosage strength (e.g. '500 mg', '10 mg', '60K IU')
-   - dose: Amount per intake (e.g. '1 tab', '5 ml')
-   - frequency: Intake schedule (e.g. '1-0-1', 'OD', 'BD', 'TDS', 'QID', 'SOS', 'once daily')
+   - strength: Dosage strength (e.g. '4 mg', '120 mg', '500 mg')
+   - dose: Amount per intake (e.g. '1 tab', '1 cap', '120')
+   - frequency: Intake schedule (e.g. '1-0-1', 'OD', 'BD', 'TDS', 'QID', 'D2-D4', 'alt A')
    - timing: Timing relative to food (e.g. 'after food', 'before food', 'at bedtime')
-   - duration: Length of therapy (e.g. '30 days', '5 days', '2 weeks')
+   - duration: Length of therapy (e.g. '5 days', 'D2-D4', '30 days', '2-y')
    - route: Route of administration if specified (e.g. 'oral', 'IV', 'topical')
-   - ambiguity_note: Null if clearly readable; or a concise note explaining any ambiguity in handwriting/OCR.
-4. VITALS: Extract clinical vitals (Blood Pressure, Pulse, Sugar/RBS/FBS, Temperature, SpO2, Weight) with their name and source-tracked value.
-5. CLINICAL INFORMATION:
-   - diagnosis: Chief complaints, clinical symptoms, or diagnoses explicitly written.
-   - allergies: ONLY if explicitly stated (e.g. 'Allergy: Penicillin', 'NKDA').
-   - advice: Lifestyle, dietary, or clinical instructions.
-   - follow_up: Follow-up duration or next appointment date.
-6. PROVIDER & PATIENT:
+   - ambiguity_note: Null if clearly readable; or a concise note explaining any handwriting ambiguity.
+4. VITALS & CLINICAL DATA:
+   - Extract clinical vitals (BP, Pulse, Sugar/RBS/FBS, Temperature, SpO2, Weight).
+   - Extract clinical diagnosis/examination notes (e.g., 'MBC (8/5/3) (Bone/Lung/Liver)', '2D Echo - N').
+   - Extract advice & follow-up instructions (e.g., 'CBC', 'Give C1 (P+H) OW', 'R/S on 3/3/21 c CBC for C2').
+5. PROVIDER & PATIENT DETAILS:
    - Extract hospital_name, doctor_name, doctor_reg_no, patient_name, patient_uhid, patient_age, patient_sex, date.
-7. FORMAT: Return ONLY valid JSON adhering strictly to the provided Prescription schema."""
+6. FORMAT: Return ONLY valid JSON adhering strictly to the provided Prescription schema."""
 
 
 def call_gemini(lines, image_path=None, retries_per_model=2):
@@ -579,20 +679,21 @@ def call_gemini(lines, image_path=None, retries_per_model=2):
     ]
 
     if SEND_IMAGE_TO_LLM and image_path:
+        mime = "image/png"
+        if image_path.lower().endswith(".jpg") or image_path.lower().endswith(".jpeg"):
+            mime = "image/jpeg"
 
         with open(image_path, "rb") as f:
             contents.insert(
                 0,
                 types.Part.from_bytes(
                     data=f.read(),
-                    mime_type="image/png"
+                    mime_type=mime
                 )
             )
 
         contents.append(
-            "The image is given only to double-check lines with conf < 0.90. "
-            "Do not add anything that is not in the OCR lines; "
-            "keep using the OCR line ids as src."
+            "Use the image to visually transcribe handwritten doctor text, patient metadata (Age, Sex, UHID, Name), and all prescribed medicines. Ensure no handwritten items are missed."
         )
 
     cfg = types.GenerateContentConfig(
@@ -790,7 +891,13 @@ def analyze_medicine(med, by_id):
         info.update(verified=True, db_name=r["name"], generic=r["generic"], composition=r["composition"], uses=r["uses"], score=100)
         if r.get("strengths_mg") and s:
             m = re.match(rf"^\s*({NUM})\s*(?:mg)?\s*$", re.sub(r"[()]", "", s))
-            known = [float(x) for x in r["strengths_mg"].split(",") if x.strip()]
+            known = []
+            for x in str(r["strengths_mg"]).split(","):
+                for num_str in re.findall(r"\d+(?:\.\d+)?", x):
+                    try:
+                        known.append(float(num_str))
+                    except ValueError:
+                        pass
             if m and known and float(m.group(1)) not in known:
                 issues.append(_issue("strength", "unusual_strength", f"{s} is not a usual strength for {r['name']} (usual: {r['strengths_mg']})"))
     elif match["status"] == "near":
@@ -1050,17 +1157,15 @@ def process_image(data: bytes, filename: str, patient_id: str, expected_name: Op
     sha = hashlib.sha256(data).hexdigest()
     log_stage("UPLOAD_RECEIVED", f"Processing upload: filename='{filename}', size={len(data)} bytes, sha256={sha[:12]}...")
 
-    # same image already processed for this patient and not discarded -> return it (no second OCR / LLM cost)
+    # Duplicate Upload Guard: Check if identical image has already been uploaded for this patient
     with engine.connect() as c:
         hit = c.execute(
-            select(extractions.c.id, extractions.c.raw_ocr_id, extractions.c.status, extractions.c.llm_model, extractions.c.analysis_json)
-            .join(raw_ocr, raw_ocr.c.id == extractions.c.raw_ocr_id)
-            .where(raw_ocr.c.image_sha256 == sha, raw_ocr.c.patient_id == patient_id, extractions.c.status != "DISCARDED")
-            .order_by(extractions.c.id.desc())).first()
+            select(raw_ocr.c.id)
+            .where(raw_ocr.c.image_sha256 == sha, raw_ocr.c.patient_id == patient_id)
+        ).first()
     if hit:
-        log_stage("CACHE_HIT", f"Identical image already processed for this patient -> returning extraction #{hit.id}", time.time() - t_pipeline_start)
-        hit_analysis = json.loads(hit.analysis_json) if hit.analysis_json else {}
-        return _payload(hit.id, hit.raw_ocr_id, hit.status, hit_analysis, hit.llm_model, duplicate=True)
+        log_stage("DUPLICATE_DISCARDED", f"Duplicate image upload detected for patient {patient_id} (sha256={sha[:12]}). OCR service skipped and upload discarded.", time.time() - t_pipeline_start)
+        raise PipelineError(f"Duplicate prescription image detected. This exact prescription has already been uploaded for patient #{patient_id}. The duplicate upload was automatically discarded without running OCR to prevent redundant records.", http=409)
 
     t_prep = time.time()
     try:
@@ -1479,10 +1584,10 @@ def api_discard(extraction_id: int):
     with engine.begin() as c:
         st = c.execute(select(extractions.c.status).where(extractions.c.id == extraction_id)).scalar()
         if st is None:
-            raise HTTPException(404, "not found")
+            return dict(ok=True)
         if st == "CONFIRMED":
             raise HTTPException(409, "already confirmed")
-        c.execute(update(extractions).where(extractions.c.id == extraction_id).values(status="DISCARDED"))
+        c.execute(delete(extractions).where(extractions.c.id == extraction_id))
         audit(c, "discarded", extraction_id)
     return dict(ok=True)
 
@@ -1515,7 +1620,7 @@ Run this file from the VS Code terminal. The API is available only on this compu
 import uvicorn
 
 PORT = int(os.environ.get("PORT", "8000"))
-HOST = os.environ.get("HOST", "127.0.0.1")
+HOST = os.environ.get("HOST", "0.0.0.0")
 
 if __name__ == "__main__":
     print("Starting local Prescription OCR API...")

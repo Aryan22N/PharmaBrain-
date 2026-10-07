@@ -74,12 +74,43 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Duplicate Guard: Check SHA256 & file duplicates before running OCR engine
+    const fileBytes = Buffer.from(await file.arrayBuffer());
+    const crypto = await import("crypto");
+    const fileSha256 = crypto.createHash("sha256").update(fileBytes).digest("hex");
+
+    try {
+      const { query } = await import("@/lib/db");
+      const existingDoc = await query(
+        `SELECT id, "originalName" FROM "Document"
+         WHERE ("userId" = $1 OR "patientId" = $2)
+           AND status != 'DISCARDED'
+           AND ("storedFilename" LIKE $3 OR "originalName" = $4)
+         LIMIT 1;`,
+        [userId, effectivePatientId, `%${fileSha256.slice(0, 16)}%`, file.name]
+      );
+
+      if (existingDoc.length > 0) {
+        console.warn(`[API/OCR] Duplicate prescription detected for patient ${effectivePatientId}. Upload discarded.`);
+        return NextResponse.json(
+          {
+            error: `Duplicate prescription upload detected. This exact image (${file.name}) has already been uploaded for patient #${effectivePatientId}. The duplicate upload was automatically discarded without running OCR to prevent redundant records.`,
+            duplicate_discarded: true,
+          },
+          { status: 409 }
+        );
+      }
+    } catch (dbCheckErr) {
+      console.warn("Pre-upload DB duplicate check error:", dbCheckErr);
+    }
+
     // Prepare outbound multipart form data for Python FastAPI
     const startTime = Date.now();
-    console.log(`[${new Date().toISOString()}] [API/OCR] Processing prescription (size=${file.size} bytes, type=${file.type}, filename=${file.name}, patientId=${effectivePatientId})`);
+    console.log(`[${new Date().toISOString()}] [API/OCR] Processing prescription (size=${file.size} bytes, type=${file.type}, filename=${file.name}, patientId=${effectivePatientId}, sha256=${fileSha256.slice(0, 12)})`);
 
     const backendFormData = new FormData();
-    backendFormData.append("file", file, file.name);
+    const uploadBlob = new Blob([fileBytes], { type: file.type });
+    backendFormData.append("file", uploadBlob, file.name);
     backendFormData.append("patient_id", effectivePatientId);
     backendFormData.append("patient_name", verifiedPatientName);
 

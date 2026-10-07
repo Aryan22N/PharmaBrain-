@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Navbar } from "@/components/Navbar";
+// import { Navbar } from "@/components/Navbar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,9 +30,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
     >
       <body className="min-h-full flex flex-col bg-[#080d18] text-slate-100 font-sans">
-        <Navbar />
-        <main className="flex-1 pb-16">{children}</main>
-        <footer className="border-t border-slate-800/80 bg-slate-950/60 py-6 text-center text-xs text-slate-500">
+        {/* <Navbar /> */}
+        <main className="flex-1 ">{children}</main>
+        {/* <footer className="border-t border-slate-800/80 bg-slate-950/60 py-6 text-center text-xs text-slate-500">
           <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div>
               Prescription Intelligence Platform • Powered by PaddleOCR-VL & Google Gemini
@@ -41,7 +41,7 @@ export default function RootLayout({
               Clinical Decision Support • Authorized Medical Personnel Only
             </div>
           </div>
-        </footer>
+        </footer> */}
       </body>
     </html>
   );

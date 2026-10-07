@@ -9,7 +9,6 @@ import {
   ShieldCheck,
   Download,
   Lock,
-  Calendar,
 } from "lucide-react";
 import { usePatientDashboard } from "@/app/patient/context";
 

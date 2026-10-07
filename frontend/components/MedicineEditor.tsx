@@ -60,9 +60,9 @@ export function MedicineEditor({ medicines, onChange, readOnly = false }: Medici
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Pill className="w-5 h-5 text-cyan-400" />
-          <h3 className="text-base font-semibold text-white">Prescribed Medications</h3>
-          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300">
+          <Pill className="w-5 h-5 text-teal-600" />
+          <h3 className="text-base font-extrabold text-slate-900">Prescribed Medications</h3>
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-teal-50 text-teal-800 border border-teal-200">
             {medicines.length} {medicines.length === 1 ? "item" : "items"}
           </span>
         </div>
@@ -71,7 +71,7 @@ export function MedicineEditor({ medicines, onChange, readOnly = false }: Medici
           <button
             type="button"
             onClick={handleAddMedicine}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 transition-colors cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             Add Medication
@@ -80,7 +80,7 @@ export function MedicineEditor({ medicines, onChange, readOnly = false }: Medici
       </div>
 
       {medicines.length === 0 ? (
-        <div className="p-8 text-center rounded-xl bg-slate-900/50 border border-slate-800 text-slate-400 text-sm">
+        <div className="p-8 text-center rounded-2xl bg-slate-50 border border-slate-200 text-slate-500 text-xs">
           No medications recorded. Click &quot;Add Medication&quot; to add one.
         </div>
       ) : (
@@ -97,23 +97,22 @@ export function MedicineEditor({ medicines, onChange, readOnly = false }: Medici
             return (
               <div
                 key={index}
-                className={`rounded-xl border transition-all ${
-                  hasIssues
-                    ? "bg-slate-900/80 border-amber-500/30 hover:border-amber-500/50"
-                    : "bg-slate-900/60 border-slate-800 hover:border-slate-700"
-                }`}
+                className={`rounded-2xl border transition-all ${hasIssues
+                    ? "bg-amber-50/40 border-amber-200 hover:border-amber-300"
+                    : "bg-white border-slate-200/90 hover:border-slate-300"
+                  }`}
               >
                 {/* Header row */}
                 <div className="p-4 flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-[240px] flex-1">
-                    <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-slate-800 text-xs font-mono font-bold text-slate-400">
+                    <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-teal-50 text-xs font-mono font-bold text-teal-700 border border-teal-200">
                       #{index + 1}
                     </span>
 
                     <div className="flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         {readOnly ? (
-                          <span className="font-semibold text-slate-100 text-base">
+                          <span className="font-extrabold text-slate-900 text-base">
                             {med.name || "(Unnamed Medication)"}
                           </span>
                         ) : (
@@ -122,7 +121,7 @@ export function MedicineEditor({ medicines, onChange, readOnly = false }: Medici
                             value={med.name || ""}
                             onChange={(e) => handleFieldChange(index, "name", e.target.value)}
                             placeholder="Medicine Name (e.g. Paracetamol)"
-                            className="font-semibold text-slate-100 text-base bg-slate-950/80 border border-slate-700/80 rounded-lg px-2.5 py-1 focus:outline-none focus:border-cyan-500 max-w-sm"
+                            className="font-bold text-slate-900 text-base bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 focus:outline-none focus:border-teal-500 focus:bg-white max-w-sm"
                           />
                         )}
 
@@ -141,12 +140,12 @@ export function MedicineEditor({ medicines, onChange, readOnly = false }: Medici
                       </div>
 
                       {med.db?.verified && (
-                        <div className="text-xs text-teal-300/90 mt-1 flex items-center gap-2">
-                          <span className="font-medium">Generic:</span> {med.db.generic}
+                        <div className="text-xs text-teal-800 mt-1 flex items-center gap-2">
+                          <span className="font-semibold">Generic:</span> {med.db.generic}
                           {med.db.uses && (
                             <>
-                              <span className="text-slate-600">•</span>
-                              <span className="text-slate-400">{med.db.uses}</span>
+                              <span className="text-slate-300">•</span>
+                              <span className="text-slate-500">{med.db.uses}</span>
                             </>
                           )}
                         </div>
@@ -158,7 +157,7 @@ export function MedicineEditor({ medicines, onChange, readOnly = false }: Medici
                     <button
                       type="button"
                       onClick={() => setExpandedIndex(isExpanded ? null : index)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
                       title={isExpanded ? "Collapse details" : "Expand details"}
                     >
                       {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -168,7 +167,7 @@ export function MedicineEditor({ medicines, onChange, readOnly = false }: Medici
                       <button
                         type="button"
                         onClick={() => handleRemoveMedicine(index)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                         title="Delete medication"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -182,18 +181,18 @@ export function MedicineEditor({ medicines, onChange, readOnly = false }: Medici
                   {/* Form */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-slate-400 font-medium">Form</span>
+                      <span className="text-slate-500 font-semibold">Form</span>
                       {fieldsMeta["form"] && <FieldFlagBadge flag={fieldsMeta["form"].flag} conf={fieldsMeta["form"].conf} />}
                     </div>
                     {readOnly ? (
-                      <div className="py-1 px-2 rounded bg-slate-950 text-slate-200">{med.form || "—"}</div>
+                      <div className="py-1 px-2.5 rounded-lg bg-slate-50 text-slate-800 font-medium border border-slate-100">{med.form || "—"}</div>
                     ) : (
                       <input
                         type="text"
                         value={med.form || ""}
                         onChange={(e) => handleFieldChange(index, "form", e.target.value)}
                         placeholder="Tab / Cap / Syp"
-                        className="w-full py-1 px-2 rounded bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-cyan-500"
+                        className="w-full py-1 px-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-teal-500 focus:bg-white font-medium"
                       />
                     )}
                   </div>
@@ -201,22 +200,21 @@ export function MedicineEditor({ medicines, onChange, readOnly = false }: Medici
                   {/* Strength */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-slate-400 font-medium">Strength</span>
+                      <span className="text-slate-500 font-semibold">Strength</span>
                       {fieldsMeta["strength"] && <FieldFlagBadge flag={fieldsMeta["strength"].flag} conf={fieldsMeta["strength"].conf} />}
                     </div>
                     {readOnly ? (
-                      <div className="py-1 px-2 rounded bg-slate-950 text-slate-200">{med.strength || "—"}</div>
+                      <div className="py-1 px-2.5 rounded-lg bg-slate-50 text-slate-800 font-medium border border-slate-100">{med.strength || "—"}</div>
                     ) : (
                       <input
                         type="text"
                         value={med.strength || ""}
                         onChange={(e) => handleFieldChange(index, "strength", e.target.value)}
                         placeholder="500 mg"
-                        className={`w-full py-1 px-2 rounded bg-slate-950 border text-slate-200 focus:outline-none ${
-                          fieldsMeta["strength"]?.flag === "missing" || fieldsMeta["strength"]?.flag === "low"
-                            ? "border-amber-500/50 focus:border-amber-400"
-                            : "border-slate-800 focus:border-cyan-500"
-                        }`}
+                        className={`w-full py-1 px-2.5 rounded-lg bg-slate-50 border text-slate-900 focus:outline-none focus:bg-white font-medium ${fieldsMeta["strength"]?.flag === "missing" || fieldsMeta["strength"]?.flag === "low"
+                            ? "border-amber-300 focus:border-amber-500"
+                            : "border-slate-200 focus:border-teal-500"
+                          }`}
                       />
                     )}
                   </div>
@@ -224,18 +222,18 @@ export function MedicineEditor({ medicines, onChange, readOnly = false }: Medici
                   {/* Dose */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-slate-400 font-medium">Dose</span>
+                      <span className="text-slate-500 font-semibold">Dose</span>
                       {fieldsMeta["dose"] && <FieldFlagBadge flag={fieldsMeta["dose"].flag} conf={fieldsMeta["dose"].conf} />}
                     </div>
                     {readOnly ? (
-                      <div className="py-1 px-2 rounded bg-slate-950 text-slate-200">{med.dose || "—"}</div>
+                      <div className="py-1 px-2.5 rounded-lg bg-slate-50 text-slate-800 font-medium border border-slate-100">{med.dose || "—"}</div>
                     ) : (
                       <input
                         type="text"
                         value={med.dose || ""}
                         onChange={(e) => handleFieldChange(index, "dose", e.target.value)}
                         placeholder="1 tab"
-                        className="w-full py-1 px-2 rounded bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-cyan-500"
+                        className="w-full py-1 px-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-teal-500 focus:bg-white font-medium"
                       />
                     )}
                   </div>
@@ -243,18 +241,18 @@ export function MedicineEditor({ medicines, onChange, readOnly = false }: Medici
                   {/* Frequency */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-slate-400 font-medium">Frequency</span>
+                      <span className="text-slate-500 font-semibold">Frequency</span>
                       {fieldsMeta["frequency"] && <FieldFlagBadge flag={fieldsMeta["frequency"].flag} conf={fieldsMeta["frequency"].conf} />}
                     </div>
                     {readOnly ? (
-                      <div className="py-1 px-2 rounded bg-slate-950 text-slate-200">{med.frequency || "—"}</div>
+                      <div className="py-1 px-2.5 rounded-lg bg-[#e6f4f1] text-[#006666] font-bold border border-[#b2e0d8]">{med.frequency || "—"}</div>
                     ) : (
                       <input
                         type="text"
                         value={med.frequency || ""}
                         onChange={(e) => handleFieldChange(index, "frequency", e.target.value)}
                         placeholder="1-0-1 / TDS"
-                        className="w-full py-1 px-2 rounded bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-cyan-500"
+                        className="w-full py-1 px-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-teal-500 focus:bg-white font-medium"
                       />
                     )}
                   </div>
@@ -262,18 +260,18 @@ export function MedicineEditor({ medicines, onChange, readOnly = false }: Medici
                   {/* Timing */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-slate-400 font-medium">Timing</span>
+                      <span className="text-slate-500 font-semibold">Timing</span>
                       {fieldsMeta["timing"] && <FieldFlagBadge flag={fieldsMeta["timing"].flag} conf={fieldsMeta["timing"].conf} />}
                     </div>
                     {readOnly ? (
-                      <div className="py-1 px-2 rounded bg-slate-950 text-slate-200">{med.timing || "—"}</div>
+                      <div className="py-1 px-2.5 rounded-lg bg-slate-50 text-slate-800 font-medium border border-slate-100">{med.timing || "—"}</div>
                     ) : (
                       <input
                         type="text"
                         value={med.timing || ""}
                         onChange={(e) => handleFieldChange(index, "timing", e.target.value)}
                         placeholder="after food"
-                        className="w-full py-1 px-2 rounded bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-cyan-500"
+                        className="w-full py-1 px-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-teal-500 focus:bg-white font-medium"
                       />
                     )}
                   </div>
@@ -281,18 +279,18 @@ export function MedicineEditor({ medicines, onChange, readOnly = false }: Medici
                   {/* Duration */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-slate-400 font-medium">Duration</span>
+                      <span className="text-slate-500 font-semibold">Duration</span>
                       {fieldsMeta["duration"] && <FieldFlagBadge flag={fieldsMeta["duration"].flag} conf={fieldsMeta["duration"].conf} />}
                     </div>
                     {readOnly ? (
-                      <div className="py-1 px-2 rounded bg-slate-950 text-slate-200">{med.duration || "—"}</div>
+                      <div className="py-1 px-2.5 rounded-lg bg-slate-50 text-slate-800 font-medium border border-slate-100">{med.duration || "—"}</div>
                     ) : (
                       <input
                         type="text"
                         value={med.duration || ""}
                         onChange={(e) => handleFieldChange(index, "duration", e.target.value)}
                         placeholder="5 days"
-                        className="w-full py-1 px-2 rounded bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-cyan-500"
+                        className="w-full py-1 px-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-teal-500 focus:bg-white font-medium"
                       />
                     )}
                   </div>
@@ -300,17 +298,17 @@ export function MedicineEditor({ medicines, onChange, readOnly = false }: Medici
 
                 {/* Expanded Details: Issues, OCR Corrections, Ambiguity Notes */}
                 {isExpanded && (
-                  <div className="px-4 pb-4 pt-2 border-t border-slate-800/80 space-y-2 text-xs">
+                  <div className="px-4 pb-4 pt-2 border-t border-slate-100 space-y-2 text-xs">
                     {issues.length > 0 && (
-                      <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 space-y-1">
-                        <div className="font-semibold flex items-center gap-1.5">
-                          <AlertTriangle className="w-3.5 h-3.5" />
+                      <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 space-y-1">
+                        <div className="font-bold flex items-center gap-1.5">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
                           Validation Flags ({issues.length})
                         </div>
-                        <ul className="list-disc list-inside space-y-0.5 text-[11px] text-amber-200/90">
+                        <ul className="list-disc list-inside space-y-0.5 text-[11px] text-amber-800">
                           {issues.map((iss, i) => (
                             <li key={i}>
-                              <span className="font-mono font-medium">{iss.field}:</span> {iss.msg}
+                              <span className="font-mono font-bold">{iss.field}:</span> {iss.msg}
                             </li>
                           ))}
                         </ul>
@@ -318,26 +316,26 @@ export function MedicineEditor({ medicines, onChange, readOnly = false }: Medici
                     )}
 
                     {corrected.length > 0 && (
-                      <div className="p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-300 space-y-1">
-                        <div className="font-semibold flex items-center gap-1.5">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
+                      <div className="p-2.5 rounded-xl bg-teal-50 border border-teal-200 text-teal-900 space-y-1">
+                        <div className="font-bold flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
                           Automated OCR Character Normalizations
                         </div>
-                        <p className="text-[11px] text-blue-200/90">
+                        <p className="text-[11px] text-teal-800">
                           {corrected.join(" • ")}
                         </p>
                       </div>
                     )}
 
                     {med.ambiguity_note && (
-                      <div className="p-2 rounded bg-slate-950 text-slate-400">
-                        <span className="text-slate-500 font-medium">Ambiguity Note:</span> {med.ambiguity_note}
+                      <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">
+                        <span className="text-slate-900 font-bold">Ambiguity Note:</span> {med.ambiguity_note}
                       </div>
                     )}
 
                     {med.db?.composition && (
-                      <div className="p-2 rounded bg-slate-950 text-slate-400">
-                        <span className="text-slate-500 font-medium">Composition:</span> {med.db.composition}
+                      <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">
+                        <span className="text-slate-900 font-bold">Composition:</span> {med.db.composition}
                       </div>
                     )}
                   </div>
@@ -350,3 +348,5 @@ export function MedicineEditor({ medicines, onChange, readOnly = false }: Medici
     </div>
   );
 }
+
+

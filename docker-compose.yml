@@ -11,19 +11,23 @@ services:
       - "8000:8000"
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - API_TOKEN=${PYTHON_API_TOKEN:-rx_local_dev_token_2026_secure}
-      - DATABASE_URL=sqlite:////app/data/rx_local.db
+      - API_TOKEN=${API_TOKEN:-rx_local_dev_token_2026_secure}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:////app/data/rx_local.db}
       - PADDLEOCR_DEVICE=cpu
+      - HOST=0.0.0.0
       - FRONTEND_ORIGIN=http://localhost:3000
+      - FLAGS_use_mkldnn=0
+      - FLAGS_enable_pir_api=0
+      - FLAGS_enable_pir_in_executor=0
     volumes:
       - paddlex-cache:/root/.paddlex
       - db-data:/app/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 45s
+      timeout: 15s
+      retries: 5
+      start_period: 300s
 
   frontend:
     build:
@@ -40,6 +44,8 @@ services:
       - NODE_ENV=production
       - PYTHON_API_URL=http://python-ocr:8000
       - PYTHON_API_TOKEN=${PYTHON_API_TOKEN:-rx_local_dev_token_2026_secure}
+      - DATABASE_URL=${DATABASE_URL}
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
 
 volumes:
   paddlex-cache:

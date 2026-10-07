@@ -35,11 +35,13 @@ function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const userName = userData?.name ?? "Rahul Sharma";
-  const userInitials = userData?.initials ?? "RS";
-  const patientCode = userData?.patientId ?? userData?.patientCode ?? "483027156";
+  const userName = userData?.name ?? "Patient";
+  const userInitials = userData?.initials ?? (userData?.name ? userData.name.split(" ").map((n: string) => n[0]).join("").toUpperCase() : "P");
+  const patientCode = userData?.patientId ?? userData?.patientCode ?? "";
   const legacyPatientCode = userData?.legacyPatientId ?? null;
-  const userEmail = userData?.email ?? "rahul.sharma@example.com";
+  const userEmail = userData?.email ?? "";
+
+  const activeMedsCount = recordedMedicines.filter((m: any) => m.status === "ACTIVE").length;
 
   const navItems = [
     { name: "Overview", href: "/patient/overview", icon: LayoutDashboard },
@@ -61,17 +63,15 @@ function Sidebar() {
       name: "Medicines",
       href: "/patient/medicines",
       icon: Pill,
-      badge: `${recordedMedicines.filter((m: any) => m.status === "ACTIVE").length || 2} active`,
+      badge: `${activeMedsCount} active`,
     },
     { name: "Symptoms & Side Effects", href: "/patient/symptoms", icon: AlertCircle },
-    { name: "Share Records", href: "/patient/share", icon: Share2 },
-    { name: "HMS Integration", href: "/patient/hms", icon: Database },
   ];
 
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
-    } catch {}
+    } catch { }
     if (typeof window !== "undefined") {
       localStorage.removeItem("auth_token");
       localStorage.removeItem("user");
@@ -108,11 +108,10 @@ function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
-                  isActive
-                    ? "bg-[#e6f4f1] text-[#006666] font-bold border-l-4 border-[#008080]"
-                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                }`}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${isActive
+                  ? "bg-[#e6f4f1] text-[#006666] font-bold border-l-4 border-[#008080]"
+                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  }`}
               >
                 <div className="flex items-center gap-2.5">
                   <Icon className={`w-4 h-4 ${isActive ? "text-[#008080]" : "text-slate-400"}`} />
@@ -120,11 +119,10 @@ function Sidebar() {
                 </div>
                 {item.badge && (
                   <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      item.badge.includes("conflict")
-                        ? "bg-[#fef3c7] text-[#b45309]"
-                        : "bg-teal-50 text-teal-700 border border-teal-200"
-                    }`}
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${item.badge.includes("conflict")
+                      ? "bg-[#fef3c7] text-[#b45309]"
+                      : "bg-teal-50 text-teal-700 border border-teal-200"
+                      }`}
                   >
                     {item.badge}
                   </span>
@@ -139,13 +137,7 @@ function Sidebar() {
         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2">
           App Controls
         </p>
-        <button
-          onClick={refresh}
-          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors border border-slate-200 cursor-pointer"
-        >
-          <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
-          Sync Supabase EHR
-        </button>
+
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors border border-slate-200 cursor-pointer"
@@ -162,12 +154,12 @@ function TopHeader() {
   const { userData } = usePatientDashboard();
   const router = useRouter();
   const [portalMode, setPortalMode] = useState<"patient" | "doctor">("patient");
-  const patientCode = userData?.patientId ?? userData?.patientCode ?? "483027156";
+  const patientCode = userData?.patientId ?? userData?.patientCode ?? "";
 
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
-    } catch {}
+    } catch { }
     if (typeof window !== "undefined") {
       localStorage.removeItem("auth_token");
       localStorage.removeItem("user");
@@ -182,12 +174,9 @@ function TopHeader() {
           <Activity className="w-5 h-5 stroke-[2.5]" />
         </Link>
         <div className="flex items-center gap-2">
-          <Link href="/patient/overview" className="text-lg font-bold text-slate-900 tracking-tight hover:text-[#0d9488] transition-colors">
-            Patient-Centric DMR
+          <Link href="/patient/overview" className="text-lg font-extrabold text-slate-900 tracking-tight hover:text-[#0d9488] transition-colors">
+            pharmaBrain
           </Link>
-          <span className="px-2 py-0.5 text-[11px] font-bold text-[#0d9488] border border-[#0d9488]/30 rounded bg-[#0d9488]/5 tracking-wider uppercase font-mono">
-            {patientCode}
-          </span>
         </div>
       </div>
 
@@ -195,38 +184,15 @@ function TopHeader() {
         <div className="hidden sm:flex items-center gap-2 bg-slate-100 p-1 rounded-full border border-slate-200">
           <button
             onClick={() => setPortalMode("patient")}
-            className={`flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full transition-all ${
-              portalMode === "patient"
-                ? "bg-white text-slate-900 shadow-xs"
-                : "text-slate-500 hover:text-slate-800"
-            }`}
+            className={`flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full transition-all ${portalMode === "patient"
+              ? "bg-white text-slate-900 shadow-xs"
+              : "text-slate-500 hover:text-slate-800"
+              }`}
           >
             <User className="w-3.5 h-3.5" />
             Patient Portal
           </button>
-          <button
-            onClick={() => {
-              setPortalMode("doctor");
-              router.push(`/patients/${userData?.patientCode || "CCM12578"}`);
-            }}
-            className={`flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full transition-all ${
-              portalMode === "doctor"
-                ? "bg-white text-slate-900 shadow-xs"
-                : "text-slate-500 hover:text-slate-800"
-            }`}
-          >
-            <Stethoscope className="w-3.5 h-3.5" />
-            Doctor Portal
-          </button>
         </div>
-
-        <button
-          onClick={() => router.push("/upload")}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#008080] hover:bg-teal-50 rounded-xl border border-teal-200 transition-colors"
-        >
-          <Upload className="w-3.5 h-3.5" />
-          Process Prescription
-        </button>
 
         <button
           onClick={handleLogout}
@@ -242,11 +208,10 @@ function TopHeader() {
 }
 
 function PatientLayoutContent({ children }: { children: React.ReactNode }) {
-  const { userData, metrics, notification, setNotification } = usePatientDashboard();
-  const router = useRouter();
+  const { userData, notification, setNotification } = usePatientDashboard();
 
-  const userName = userData?.name ?? "Rahul Sharma";
-  const patientCode = userData?.patientId ?? userData?.patientCode ?? "483027156";
+  const userName = userData?.name ?? "Patient";
+  const patientCode = userData?.patientId ?? userData?.patientCode ?? "";
   const legacyPatientCode = userData?.legacyPatientId ?? null;
 
   return (

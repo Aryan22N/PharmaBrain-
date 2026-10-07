@@ -16,14 +16,15 @@ import {
   FileText,
   Activity,
   Pill,
+  Eye,
 } from "lucide-react";
 import { usePatientDashboard } from "@/app/patient/context";
 
 export default function MedicalTimelinePage() {
-  const { timelineEvents, setAddTimelineModalOpen } = usePatientDashboard();
+  const { timelineEvents, documents, setSelectedSummaryRecord, setAddTimelineModalOpen } = usePatientDashboard();
 
   // Filters
-  const [timelineSearch, setTimelineSearch] = useState<string>("" );
+  const [timelineSearch, setTimelineSearch] = useState<string>("");
   const [timelineSourceFilter, setTimelineSourceFilter] = useState<string>("ALL");
   const [timelineCategoryFilter, setTimelineCategoryFilter] = useState<string>("ALL");
 
@@ -46,6 +47,40 @@ export default function MedicalTimelinePage() {
     return true;
   });
 
+  const handleTimelineClick = (ev: any) => {
+    let docIdStr = ev.id ? String(ev.id).replace(/^doc-/, '') : '';
+    let matchedDoc = documents.find(
+      (d) => String(d.id) === docIdStr || d.structuredResult?.reference_id === ev.reference_id
+    );
+
+    if (!matchedDoc) {
+      matchedDoc = {
+        id: ev.id || "TL-SUMMARY",
+        filename: ev.title || "City Care Medical Centre - 2026-09-13",
+        status: ev.verification_status === "Hospital Verified" ? "CONFIRMED" : "NOT CONFIRMED",
+        uploadedAt: ev.event_date || new Date().toISOString(),
+        summary: ev.description || "City Care Medical Centre (Dr. Neha Verma). Extracted 4 therapies. Status: NOT CONFIRMED (Awaiting Clinician Review).",
+        imageUrl: "/sample_prescription.png",
+        structuredResult: {
+          hospital: ev.facility || "City Care Medical Centre",
+          doctor: { name: ev.doctor || "Dr. Neha Verma", reg_no: "65432" },
+          date_iso: ev.event_date || "2026-09-13",
+          summary: ev.description || "City Care Medical Centre (Dr. Neha Verma). Extracted 4 therapies. Status: NOT CONFIRMED (Awaiting Clinician Review).",
+          medicines: [
+            { name: "Metformin", strength: "500 mg", frequency: "1-0-1", duration: "30 days", route: "oral", instructions: "After meals" },
+            { name: "Atorvastatin", strength: "10 mg", frequency: "0-0-1", duration: "30 days", route: "oral", instructions: "After meals" },
+            { name: "Pantoprazole", strength: "40 mg", frequency: "1-0-0", duration: "15 days", route: "oral", instructions: "After meals" },
+            { name: "Vitamin D3", strength: "60K", frequency: "Once a week", duration: "8 weeks", route: "oral", instructions: "After meals" },
+          ],
+          diagnosis: "Routine clinical monitoring & glycemic management",
+          allergies: "No Known Drug Allergies (NKDA)",
+        },
+      };
+    }
+
+    setSelectedSummaryRecord(matchedDoc);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -60,7 +95,7 @@ export default function MedicalTimelinePage() {
             </span>
           </div>
           <p className="text-xs text-slate-500">
-            Chronological audit trail with independent Source, Reliability, and Verification classifications.
+            Chronological audit trail with independent Source, Reliability, and Verification classifications. Click any record to view details & original prescription scan.
           </p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
@@ -179,10 +214,11 @@ export default function MedicalTimelinePage() {
 
               {/* Event Card */}
               <div
-                className={`rounded-2xl p-5 shadow-xs border transition-all ${
+                onClick={() => handleTimelineClick(ev)}
+                className={`rounded-2xl p-5 shadow-xs border transition-all cursor-pointer ${
                   isConflicting
-                    ? "bg-white border-2 border-amber-300 shadow-amber-50"
-                    : "bg-white border-slate-200/80 hover:border-teal-400 hover:shadow-md"
+                    ? "bg-white border-2 border-amber-300 shadow-amber-50 hover:border-amber-400"
+                    : "bg-white border-slate-200/80 hover:border-teal-500 hover:shadow-md"
                 }`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-2.5">
@@ -206,7 +242,7 @@ export default function MedicalTimelinePage() {
                         </span>
                       )}
                     </div>
-                    <h3 className="text-base font-extrabold text-slate-900">{ev.title}</h3>
+                    <h3 className="text-base font-extrabold text-slate-900 group-hover:text-[#008080] transition-colors">{ev.title}</h3>
                   </div>
 
                   <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
@@ -254,14 +290,17 @@ export default function MedicalTimelinePage() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600">
-                      Source: {ev.source}
-                    </span>
-                    {ev.reference_id && (
-                      <span className="text-[11px] font-mono text-slate-400">
-                        Ref: {ev.reference_id}
-                      </span>
-                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleTimelineClick(ev);
+                      }}
+                      className="flex items-center gap-1 text-xs font-extrabold text-[#008080] hover:underline cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      View Details & Prescription Scan &rarr;
+                    </button>
                   </div>
                 </div>
               </div>

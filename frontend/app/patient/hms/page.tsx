@@ -9,7 +9,6 @@ import {
   ShieldCheck,
   Activity,
   Layers,
-  FileCheck,
 } from "lucide-react";
 import { usePatientDashboard } from "@/app/patient/context";
 

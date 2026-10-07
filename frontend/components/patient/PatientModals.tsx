@@ -88,31 +88,7 @@ export function PatientModals() {
               </button>
             </div>
 
-            {/* Unconfirmed Alert Callout Banner */}
-            {selectedSummaryRecord.status !== "CONFIRMED" && (
-              <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-                <div className="flex items-start gap-2.5 text-xs text-amber-900">
-                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-bold">Prescription Status: NOT CONFIRMED (Clinical Draft)</p>
-                    <p className="text-[11px] text-amber-800 leading-relaxed">
-                      This document has been parsed by PaddleOCR & structured by AI. Review and verify the dosage before marking Hospital Verified.
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  href={
-                    selectedSummaryRecord.filePath?.startsWith("/extractions/")
-                      ? selectedSummaryRecord.filePath
-                      : `/extractions/${selectedSummaryRecord.id}`
-                  }
-                  className="px-4 py-2 bg-[#008080] hover:bg-[#006666] text-white text-xs font-bold rounded-xl shadow-xs transition-colors shrink-0 flex items-center justify-center gap-1.5"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Review & Confirm Now &rarr;
-                </Link>
-              </div>
-            )}
+
 
             {/* Uploaded Prescription Document Image Viewer */}
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
@@ -294,15 +270,6 @@ export function PatientModals() {
                 Source document path: {selectedSummaryRecord.filePath || `/uploads/${selectedSummaryRecord.filename}`}
               </div>
               <div className="flex items-center gap-2">
-                {selectedSummaryRecord.filePath?.startsWith("/extractions/") && (
-                  <Link
-                    href={selectedSummaryRecord.filePath}
-                    className="px-4 py-2 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-semibold rounded-xl border border-teal-200 transition-colors flex items-center gap-1.5"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    Open Extraction Inspector
-                  </Link>
-                )}
                 <button
                   onClick={() => setSelectedSummaryRecord(null)}
                   className="px-5 py-2 bg-[#008080] hover:bg-[#006666] text-white text-xs font-bold rounded-xl shadow-xs transition-colors"

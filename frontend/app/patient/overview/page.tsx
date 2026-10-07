@@ -22,12 +22,14 @@ import { usePatientDashboard } from "@/app/patient/context";
 
 export default function OverviewPage() {
   const router = useRouter();
-  const { userData, metrics, documents, setSelectedSummaryRecord } = usePatientDashboard();
+  const { userData, metrics, documents, timelineEvents, recordedMedicines, setSelectedSummaryRecord } = usePatientDashboard();
 
-  const userName = userData?.name || "Rahul Sharma";
-  const userEmail = userData?.email || "rahul.sharma@example.com";
-  const patientCode = userData?.patientId ?? userData?.patientCode ?? "483027156";
+  const userName = userData?.name || "Patient";
+  const userEmail = userData?.email || "";
+  const patientCode = userData?.patientId ?? userData?.patientCode ?? "";
   const legacyPatientCode = userData?.legacyPatientId ?? null;
+
+  const conflictingItem = recordedMedicines.find((m: any) => m.is_conflicting) || timelineEvents.find((e: any) => e.is_conflicting);
 
   return (
     <div className="space-y-6">
@@ -38,9 +40,6 @@ export default function OverviewPage() {
             <h2 className="text-2xl font-extrabold text-slate-900">
               Welcome, {userName}
             </h2>
-            <span className="bg-teal-50 text-teal-700 text-xs font-bold px-2.5 py-0.5 rounded border border-teal-200 font-mono">
-              {patientCode}
-            </span>
             {legacyPatientCode && (
               <span className="bg-slate-100 text-slate-600 text-[11px] font-medium px-2 py-0.5 rounded border border-slate-200 font-mono">
                 Legacy: {legacyPatientCode}
@@ -48,7 +47,7 @@ export default function OverviewPage() {
             )}
           </div>
           <p className="text-xs text-slate-500">
-            Personal Medical Record • Longitudinal Care Summary as of October 2026
+            Personal Medical Record • Longitudinal Care Summary
           </p>
         </div>
 
@@ -60,36 +59,31 @@ export default function OverviewPage() {
             <Upload className="w-4 h-4 stroke-[2.5]" />
             Upload Document
           </button>
-          <button
-            onClick={() => router.push("/upload")}
-            className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl shadow-xs border border-slate-300 transition-colors cursor-pointer"
+        </div>
+      </div>
+
+      {/* Dynamic Alert Warning Box — Only shown if real conflicts exist */}
+      {conflictingItem && (
+        <div className="bg-[#fffbeb] border border-[#fef3c7] p-4 rounded-2xl flex items-start gap-3 shadow-xs">
+          <AlertTriangle className="w-5 h-5 text-[#b45309] shrink-0 mt-0.5" />
+          <div className="flex-1 text-xs text-[#92400e]">
+            <h3 className="font-bold text-[#b45309] mb-0.5">
+              Conflicting Clinical Information Detected
+            </h3>
+            <p className="leading-relaxed">
+              {conflictingItem.conflict_details || `A clinical conflict was detected for ${conflictingItem.name || conflictingItem.title}.`}
+            </p>
+          </div>
+          <Link
+            href="/patient/timeline"
+            className="text-xs font-bold text-[#b45309] hover:underline flex items-center gap-1 shrink-0"
           >
-            <Sparkles className="w-4 h-4 text-teal-600" />
-            Process Prescription (AI)
-          </button>
+            Review Discrepancy &rarr;
+          </Link>
         </div>
-      </div>
+      )}
 
-      {/* Alert Warning Box */}
-      <div className="bg-[#fffbeb] border border-[#fef3c7] p-4 rounded-2xl flex items-start gap-3 shadow-xs">
-        <AlertTriangle className="w-5 h-5 text-[#b45309] shrink-0 mt-0.5" />
-        <div className="flex-1 text-xs text-[#92400e]">
-          <h3 className="font-bold text-[#b45309] mb-0.5">
-            Conflicting Clinical Information Detected (1 Item)
-          </h3>
-          <p className="leading-relaxed">
-            A patient manual entry for Metformin (1000 mg) conflicts with the hospital prescription order (500 mg). Hospital HMS is prioritized for clinical continuity. Both records are preserved in the timeline.
-          </p>
-        </div>
-        <Link
-          href="/patient/timeline"
-          className="text-xs font-bold text-[#b45309] hover:underline flex items-center gap-1 shrink-0"
-        >
-          Review Discrepancy &rarr;
-        </Link>
-      </div>
-
-      {/* 6 Key Dynamic Metric Cards from Supabase DB */}
+      {/* 6 Key Dynamic Metric Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {/* 1. Total Records */}
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
@@ -123,7 +117,7 @@ export default function OverviewPage() {
           </div>
           <div>
             <span className="text-2xl font-extrabold text-slate-900">{metrics.activeMeds}</span>
-            <p className="text-[10px] text-slate-400 mt-0.5">Oral therapies</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">Active therapies</p>
           </div>
         </div>
 
@@ -134,8 +128,10 @@ export default function OverviewPage() {
             <Activity className="w-4 h-4 text-amber-500" />
           </div>
           <div>
-            <span className="text-2xl font-extrabold text-[#d97706]">{metrics.lastHbA1c}</span>
-            <p className="text-[10px] text-amber-600 font-medium mt-0.5">Aug 2026 (Elevated)</p>
+            <span className="text-2xl font-extrabold text-slate-900">{metrics.lastHbA1c}</span>
+            <p className="text-[10px] text-amber-600 font-medium mt-0.5">
+              {metrics.lastHbA1c !== "--" ? "Latest result" : "No lab data"}
+            </p>
           </div>
         </div>
 
@@ -147,7 +143,9 @@ export default function OverviewPage() {
           </div>
           <div>
             <div className="text-lg font-extrabold text-slate-900 leading-tight">{metrics.bloodPressure}</div>
-            <p className="text-[10px] text-slate-400 mt-0.5">Stage 1 Control</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">
+              {metrics.bloodPressure !== "--" ? "Latest reading" : "No BP recorded"}
+            </p>
           </div>
         </div>
 
@@ -159,7 +157,9 @@ export default function OverviewPage() {
           </div>
           <div>
             <span className="text-2xl font-extrabold text-slate-900">{metrics.historyCoverage}</span>
-            <p className="text-[10px] text-teal-600 font-medium mt-0.5">Good baseline</p>
+            <p className="text-[10px] text-teal-600 font-medium mt-0.5">
+              {metrics.totalRecords > 0 ? "Coverage baseline" : "No records yet"}
+            </p>
           </div>
         </div>
       </div>
@@ -181,102 +181,123 @@ export default function OverviewPage() {
           </div>
 
           <p className="text-xs text-slate-600 leading-relaxed">
-            Summary for patient <strong className="text-slate-800">{userName}</strong> ({userEmail}). Integrated with Supabase PostgreSQL and automated document OCR telemetry. Click any record to inspect the complete clinical summary.
+            Summary for patient <strong className="text-slate-800">{userName}</strong>{userEmail ? ` (${userEmail})` : ""}. Integrated with Supabase PostgreSQL and automated document OCR telemetry. Click any record to inspect details.
           </p>
 
-          {/* Dynamic Clickable Documents List */}
-          <div className="space-y-3 pt-1">
-            {documents.map((doc, idx) => {
-              const docDate =
-                doc.structuredResult?.date_iso ||
-                new Date(doc.uploadedAt).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                });
-              const meds = doc.structuredResult?.medicines || doc.medicines || [];
+          {/* Documents List or Clean Empty State */}
+          {documents.length === 0 ? (
+            <div className="text-center py-10 px-4 bg-slate-50/50 rounded-xl border border-dashed border-slate-200 space-y-3">
+              <div className="w-12 h-12 rounded-full bg-teal-50 text-teal-700 flex items-center justify-center mx-auto">
+                <FileText className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-slate-800">No medical records uploaded yet</h4>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+                  Upload your paper prescriptions or lab reports to automatically extract structured clinical data with PaddleOCR.
+                </p>
+              </div>
+              <button
+                onClick={() => router.push("/upload")}
+                className="inline-flex items-center gap-2 bg-[#008080] hover:bg-[#006666] text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors cursor-pointer"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                Upload First Document
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3 pt-1">
+              {documents.map((doc, idx) => {
+                const docDate =
+                  doc.structuredResult?.date_iso ||
+                  new Date(doc.uploadedAt).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  });
+                const meds = doc.structuredResult?.medicines || doc.medicines || [];
 
-              return (
-                <div
-                  key={doc.id || idx}
-                  onClick={() => setSelectedSummaryRecord(doc)}
-                  className="bg-slate-50/80 hover:bg-teal-50/40 p-4 rounded-xl border border-slate-200/80 hover:border-teal-400 hover:shadow-md cursor-pointer transition-all active:scale-[0.99] group flex flex-col md:flex-row md:items-center justify-between gap-4"
-                  role="button"
-                  tabIndex={0}
-                  title="Click to view complete clinical summary"
-                >
-                  <div className="flex items-start gap-3.5 overflow-hidden min-w-0">
-                    <div className="w-12 h-12 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shrink-0 mt-0.5 group-hover:border-teal-400 transition-all shadow-2xs relative">
-                      {doc.imageUrl ? (
-                        <img
-                          src={doc.imageUrl}
-                          alt={doc.filename}
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "/sample_prescription.png";
-                          }}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-100">
-                          <FileImage className="w-5 h-5 text-slate-400" />
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="overflow-hidden min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                        <span className="text-xs font-bold text-slate-900 group-hover:text-teal-900 transition-colors truncate">
-                          {doc.filename}
-                        </span>
-                        <span
-                          className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
-                            doc.status === "CONFIRMED"
-                              ? "bg-teal-50 text-teal-700 border-teal-200"
-                              : "bg-amber-50 text-amber-700 border-amber-200"
-                          }`}
-                        >
-                          {doc.status === "CONFIRMED" ? "Hospital Verified" : "Draft Extraction"}
-                        </span>
-                      </div>
-
-                      <p className="text-[11px] text-slate-500 truncate mb-1">
-                        {doc.summary || doc.structuredResult?.summary || "Clinical encounter details recorded."}
-                      </p>
-
-                      <div className="flex items-center gap-3 text-[10px] text-slate-400">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3 text-slate-400" />
-                          {docDate}
-                        </span>
-                        <span>•</span>
-                        <span>
-                          Facility:{" "}
-                          <strong className="text-slate-600 font-semibold">
-                            {doc.structuredResult?.hospital || "City Care Medical"}
-                          </strong>
-                        </span>
-                        {meds.length > 0 && (
-                          <>
-                            <span>•</span>
-                            <span className="text-teal-700 font-semibold">
-                              {meds.length} Meds Extracted
-                            </span>
-                          </>
+                return (
+                  <div
+                    key={doc.id || idx}
+                    onClick={() => setSelectedSummaryRecord(doc)}
+                    className="bg-slate-50/80 hover:bg-teal-50/40 p-4 rounded-xl border border-slate-200/80 hover:border-teal-400 hover:shadow-md cursor-pointer transition-all active:scale-[0.99] group flex flex-col md:flex-row md:items-center justify-between gap-4"
+                    role="button"
+                    tabIndex={0}
+                    title="Click to view complete clinical summary"
+                  >
+                    <div className="flex items-start gap-3.5 overflow-hidden min-w-0">
+                      <div className="w-12 h-12 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shrink-0 mt-0.5 group-hover:border-teal-400 transition-all shadow-2xs relative">
+                        {doc.imageUrl ? (
+                          <img
+                            src={doc.imageUrl}
+                            alt={doc.filename}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "/sample_prescription.png";
+                            }}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-100">
+                            <FileImage className="w-5 h-5 text-slate-400" />
+                          </div>
                         )}
                       </div>
+
+                      <div className="overflow-hidden min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                          <span className="text-xs font-bold text-slate-900 group-hover:text-teal-900 transition-colors truncate">
+                            {doc.filename}
+                          </span>
+                          <span
+                            className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
+                              doc.status === "CONFIRMED"
+                                ? "bg-teal-50 text-teal-700 border-teal-200"
+                                : "bg-amber-50 text-amber-700 border-amber-200"
+                            }`}
+                          >
+                            {doc.status === "CONFIRMED" ? "Hospital Verified" : "Draft Extraction"}
+                          </span>
+                        </div>
+
+                        <p className="text-[11px] text-slate-500 truncate mb-1">
+                          {doc.summary || doc.structuredResult?.summary || "Clinical encounter details recorded."}
+                        </p>
+
+                        <div className="flex items-center gap-3 text-[10px] text-slate-400">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3 text-slate-400" />
+                            {docDate}
+                          </span>
+                          <span>•</span>
+                          <span>
+                            Facility:{" "}
+                            <strong className="text-slate-600 font-semibold">
+                              {doc.structuredResult?.hospital || "City Care Medical"}
+                            </strong>
+                          </span>
+                          {meds.length > 0 && (
+                            <>
+                              <span>•</span>
+                              <span className="text-teal-700 font-semibold">
+                                {meds.length} Meds Extracted
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
+                      <span className="text-xs font-bold text-[#008080] group-hover:underline flex items-center gap-1">
+                        <Eye className="w-3.5 h-3.5" />
+                        View Summary &rarr;
+                      </span>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
-                    <span className="text-xs font-bold text-[#008080] group-hover:underline flex items-center gap-1">
-                      <Eye className="w-3.5 h-3.5" />
-                      View Summary &rarr;
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Right Column: How Records Are Prioritized & Actions */}

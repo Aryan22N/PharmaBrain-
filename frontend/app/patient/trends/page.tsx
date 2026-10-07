@@ -6,30 +6,22 @@ import {
   Activity,
   Heart,
   Calendar,
-  AlertTriangle,
-  CheckCircle2,
-  ArrowDownRight,
-  ArrowUpRight,
   ShieldCheck,
+  FileText,
 } from "lucide-react";
 import { usePatientDashboard } from "@/app/patient/context";
 
 export default function TrendsPage() {
-  const { metrics } = usePatientDashboard();
+  const { metrics, timelineEvents } = usePatientDashboard();
 
-  const hba1cHistory = [
-    { date: "Oct 2024", value: 9.4, status: "High Risk", note: "Initial diagnosis" },
-    { date: "Apr 2025", value: 8.8, status: "Elevated", note: "Started Metformin" },
-    { date: "Dec 2025", value: 8.4, status: "Elevated", note: "Dietary adjustment" },
-    { date: "Aug 2026", value: 8.1, status: "Elevated", note: "Current reading" },
-  ];
+  // Extract lab / observation timeline events if available
+  const hba1cEvents = timelineEvents.filter(
+    (e: any) => e.category === "Lab Result" && (e.title?.toLowerCase().includes("hba1c") || e.description?.toLowerCase().includes("hba1c"))
+  );
 
-  const bpHistory = [
-    { date: "Oct 2024", sys: 158, dia: 98, status: "Stage 2 HTN" },
-    { date: "Apr 2025", sys: 152, dia: 96, status: "Stage 2 HTN" },
-    { date: "Dec 2025", sys: 148, dia: 94, status: "Stage 1 HTN" },
-    { date: "Aug 2026", sys: 146, dia: 92, status: "Stage 1 HTN (Improving)" },
-  ];
+  const bpEvents = timelineEvents.filter(
+    (e: any) => e.category === "Cardiovascular" || e.title?.toLowerCase().includes("blood pressure") || e.title?.toLowerCase().includes("bp")
+  );
 
   return (
     <div className="space-y-6">
@@ -68,30 +60,39 @@ export default function TrendsPage() {
           </div>
 
           <p className="text-xs text-slate-600 leading-relaxed">
-            Target clinical goal is <strong>&lt; 6.5%</strong>. Trend shows steady longitudinal improvement from 9.4% down to 8.1%.
+            Target clinical goal is <strong>&lt; 6.5%</strong>. Glycemic trend populates as lab reports and HbA1c test documents are uploaded.
           </p>
 
-          <div className="space-y-3 pt-2">
-            {hba1cHistory.map((item, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/70 text-xs"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="font-bold text-slate-800">{item.date}</span>
-                  <span className="text-slate-500 text-[11px] font-mono">({item.note})</span>
-                </div>
+          {hba1cEvents.length === 0 ? (
+            <div className="text-center py-8 px-4 bg-slate-50 rounded-xl border border-dashed border-slate-200 space-y-2">
+              <FileText className="w-6 h-6 text-slate-400 mx-auto" />
+              <p className="text-xs font-semibold text-slate-700">No HbA1c lab history recorded yet</p>
+              <p className="text-[11px] text-slate-500 max-w-xs mx-auto">
+                Upload your latest blood test results to start tracking longitudinal HbA1c glycemic trends.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3 pt-2">
+              {hba1cEvents.map((item: any, idx: number) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/70 text-xs"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="font-bold text-slate-800">{item.event_date}</span>
+                    <span className="text-slate-500 text-[11px] font-mono">({item.title})</span>
+                  </div>
 
-                <div className="flex items-center gap-2">
-                  <span className="font-extrabold text-sm text-slate-900">{item.value}%</span>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-800">
-                    {item.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-800">
+                      {item.verification_status || "Verified"}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Blood Pressure Cardiovascular Trajectory */}
@@ -102,36 +103,44 @@ export default function TrendsPage() {
               <h3 className="text-sm font-bold text-slate-900">Cardiovascular Blood Pressure</h3>
             </div>
             <span className="text-xs font-extrabold text-rose-600 bg-rose-50 border border-rose-200 px-2.5 py-0.5 rounded-lg">
-              {metrics.bloodPressure}
+              Current: {metrics.bloodPressure}
             </span>
           </div>
 
           <p className="text-xs text-slate-600 leading-relaxed">
-            Target therapeutic range is <strong>120/80 mmHg</strong>. Controlled from Stage 2 hypertension to Stage 1.
+            Target therapeutic range is <strong>120/80 mmHg</strong>. Blood pressure readings populate from recorded clinical encounters.
           </p>
 
-          <div className="space-y-3 pt-2">
-            {bpHistory.map((item, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/70 text-xs"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="font-bold text-slate-800">{item.date}</span>
-                </div>
+          {bpEvents.length === 0 ? (
+            <div className="text-center py-8 px-4 bg-slate-50 rounded-xl border border-dashed border-slate-200 space-y-2">
+              <Heart className="w-6 h-6 text-slate-400 mx-auto" />
+              <p className="text-xs font-semibold text-slate-700">No blood pressure readings recorded yet</p>
+              <p className="text-[11px] text-slate-500 max-w-xs mx-auto">
+                Upload clinical encounter summaries or record vitals to track blood pressure history.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3 pt-2">
+              {bpEvents.map((item: any, idx: number) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/70 text-xs"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="font-bold text-slate-800">{item.event_date}</span>
+                    <span className="text-slate-500 text-[11px]">{item.title}</span>
+                  </div>
 
-                <div className="flex items-center gap-2">
-                  <span className="font-extrabold text-sm text-slate-900">
-                    {item.sys}/{item.dia} mmHg
-                  </span>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
-                    {item.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
+                      {item.verification_status || "Recorded"}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

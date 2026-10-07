@@ -1,6 +1,6 @@
 # Core deep learning and OCR framework
-paddlepaddle>=3.0.0
-paddleocr[doc-parser]>=3.3.0
+paddlepaddle==2.6.2
+paddleocr==2.8.1
 
 # API and Server
 fastapi>=0.110.0

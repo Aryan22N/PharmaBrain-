@@ -6,8 +6,8 @@ import { FieldFlagBadge } from "./StatusBadge";
 export function VitalsDisplay({ vitals }: { vitals: VitalRecord[] }) {
   if (!vitals || vitals.length === 0) {
     return (
-      <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-800 text-slate-500 text-xs">
-        No vital signs or clinical measurements detected on this prescription.
+      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 text-xs">
+        No vital signs or clinical measurements recorded on this prescription.
       </div>
     );
   }
@@ -33,33 +33,33 @@ export function VitalsDisplay({ vitals }: { vitals: VitalRecord[] }) {
         return (
           <div
             key={i}
-            className={`p-3 rounded-xl border transition-all ${
+            className={`p-3.5 rounded-xl border transition-all ${
               hasIssue
-                ? "bg-amber-500/10 border-amber-500/30"
-                : "bg-slate-900/60 border-slate-800"
+                ? "bg-amber-50/80 border-amber-200 text-amber-900"
+                : "bg-slate-50/80 border-slate-200 text-slate-900"
             }`}
           >
             <div className="flex items-center justify-between text-xs mb-1.5">
-              <div className="flex items-center gap-1.5 text-slate-400 font-medium">
-                <Icon className={`w-3.5 h-3.5 ${hasIssue ? "text-amber-400" : "text-cyan-400"}`} />
+              <div className="flex items-center gap-1.5 text-slate-600 font-semibold">
+                <Icon className={`w-4 h-4 ${hasIssue ? "text-amber-600" : "text-teal-600"}`} />
                 <span className="capitalize">{v.name}</span>
               </div>
               <FieldFlagBadge flag={v.flag} conf={v.conf} />
             </div>
 
-            <div className="text-base font-bold text-slate-100 font-mono">
+            <div className="text-base font-bold text-slate-900 font-mono">
               {v.value || "—"}
             </div>
 
             {parsed.error && (
-              <div className="mt-1 text-[11px] text-amber-300 flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3 shrink-0" />
+              <div className="mt-1 text-[11px] text-amber-700 flex items-center gap-1 font-medium">
+                <AlertTriangle className="w-3 h-3 shrink-0 text-amber-600" />
                 <span>{parsed.error}</span>
               </div>
             )}
 
             {parsed.systolic && parsed.diastolic && (
-              <div className="mt-1 text-[11px] text-slate-400 font-mono">
+              <div className="mt-1 text-[11px] text-slate-500 font-mono">
                 {parsed.systolic} / {parsed.diastolic} {parsed.unit || "mmHg"}
               </div>
             )}
@@ -69,3 +69,4 @@ export function VitalsDisplay({ vitals }: { vitals: VitalRecord[] }) {
     </div>
   );
 }
+

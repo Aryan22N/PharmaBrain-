@@ -56,7 +56,7 @@ export async function GET(request: Request) {
               a.summary, a."structuredResult"
        FROM "Document" d
        LEFT JOIN "Analysis" a ON d.id = a."documentId"
-       WHERE d."userId" = $1 OR d."patientId" = $2
+       WHERE (d."userId" = $1 OR d."patientId" = $2) AND d.status != 'DISCARDED'
        ORDER BY d."uploadedAt" DESC;`,
       [user.id, patientCode]
     );
@@ -84,13 +84,13 @@ export async function GET(request: Request) {
       }
     });
 
-    const activeMeds = distinctMeds.size > 0 ? distinctMeds.size : (totalRecords > 0 ? 2 : 0);
+    const activeMeds = distinctMeds.size;
 
     // 4. Query live observations matching patient's 9-digit ID or legacy ID
-    let bloodPressure = "146/92 mmHg";
-    let lastHbA1c = "8.1%";
+    let bloodPressure = "--";
+    let lastHbA1c = "--";
 
-    const patientIds = [user.patientId, user.legacyPatientId, `P-00${user.id}`, "483027156", "CCM12578"].filter(Boolean);
+    const patientIds = [user.patientId, user.legacyPatientId].filter(Boolean);
 
     try {
       const bpObs = await query(
@@ -257,9 +257,9 @@ export async function GET(request: Request) {
     const unifiedMedicines = Array.from(medMap.values());
     unifiedMedicines.sort((a, b) => (a.status === 'ACTIVE' ? 0 : 1) - (b.status === 'ACTIVE' ? 0 : 1));
 
-    const calculatedActiveMeds = unifiedMedicines.filter(m => m.status === 'ACTIVE').length || activeMeds;
+    const calculatedActiveMeds = unifiedMedicines.filter(m => m.status === 'ACTIVE').length;
 
-    const historyCoverage = `${Math.min(100, Math.round((Math.max(hospitalVerified, 1) / 10) * 100))}%`;
+    const historyCoverage = hospitalVerified > 0 ? `${Math.min(100, Math.round((hospitalVerified / 10) * 100))}%` : "0%";
 
     const initials = user.name
       ? user.name

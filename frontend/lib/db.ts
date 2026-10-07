@@ -1,9 +1,18 @@
 import { Pool, QueryResultRow } from 'pg';
 
-// Supabase PostgreSQL Database Connection
-const connectionString =
-  process.env.DATABASE_URL ||
-  "postgresql://postgres:postgres@localhost:5432/postgres";
+/**
+ * Normalizes PostgreSQL connection string for Supabase and local environments.
+ * Strips `sslmode` parameter so `pg` Pool options explicitly manage SSL behavior without conflicts.
+ */
+function getConnectionString(): string {
+  const raw =
+    process.env.DATABASE_URL ||
+    'postgresql://postgres:postgres@localhost:5432/postgres';
+
+  return raw.replace(/[\?&]sslmode=[^&]+/g, '');
+}
+
+const connectionString = getConnectionString();
 
 const isLocalhost =
   connectionString.includes('localhost') ||
@@ -25,6 +34,11 @@ export const pool: Pool =
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000,
   });
+
+// Catch and handle idle pool errors (e.g. Supabase connection resets) to prevent process crashes
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle PostgreSQL client:', err);
+});
 
 if (process.env.NODE_ENV !== 'production') {
   global.__dbPool = pool;
@@ -48,3 +62,4 @@ export async function query<T extends QueryResultRow = any>(
     client.release();
   }
 }
+
