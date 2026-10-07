@@ -9,7 +9,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 
 ### Added
+- 2026-10-08 — Patient Initial Profile Context Onboarding Flow: 4-step health context wizard (`frontend/app/onboarding/page.tsx` & `frontend/app/patient/onboarding/page.tsx`), PostgreSQL initial profile storage endpoint (`frontend/app/api/user/onboarding/route.ts`), and `patient_onboarding` database schema.
+- 2026-10-08 — Deduplication detection on prescription upload (`POST /api/ocr`) via SHA-256 image hashing.
+- 2026-10-08 — Discard draft functionality (`POST /api/discard/[id]`) to delete unconfirmed prescription drafts from database.
 - 2026-10-07 — Documentation rebuilt from scratch against current code. All old docs archived to `docs/_archive_20261007/`. New docs cover `README.md`, `AGENTS.md`, and `docs/01` through `docs/13` plus `GLOSSARY.md`.
+
+### Changed
+- 2026-10-08 — Post-authentication routing redirect in `frontend/app/auth/page.tsx` directs patients to `/onboarding`.
+- 2026-10-08 — Cleaned up all demo MVP text footers and `DemoDisclaimerFooter` across patient portal UI.
 
 ---
 

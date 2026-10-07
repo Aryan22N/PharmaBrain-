@@ -62,6 +62,7 @@ Pipeline details: [docs/03_PIPELINE_SPEC.md](docs/03_PIPELINE_SPEC.md)
 | Change upload UI | `frontend/app/upload/page.tsx` |
 | Change extraction review UI | `frontend/app/extractions/[id]/page.tsx` |
 | Change medicine edit form | `frontend/components/MedicineEditor.tsx` |
+| Change patient onboarding flow | `frontend/app/onboarding/page.tsx` + `frontend/app/api/user/onboarding/route.ts` |
 | Add new medicine records | Use `import_medicine_csv()` or add to `STARTER` list |
 
 ---

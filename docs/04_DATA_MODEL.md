@@ -1,8 +1,8 @@
 ---
 Title: Data Model
 Purpose: All database tables, Pydantic schemas, and provenance chain
-Last verified against code: 2026-10-07
-Code version: no git
+Last verified against code: 2026-10-08
+Code version: a100256
 Owner: TBD
 ---
 
@@ -222,15 +222,18 @@ Append-only event log for the pipeline.
 
 ---
 
-## Next.js EHR Tables (pg pool — PascalCase, quoted)
+## Next.js EHR & Patient Tables (pg pool — PostgreSQL)
 
-Managed by `frontend/lib/db.ts` and defined in `scratch/supabase_schema.sql`.
+Managed by `frontend/lib/db.ts` and API endpoints.
 
 | Table | Purpose |
 |---|---|
 | `"User"` | Patient accounts: `id`, `patientId` (9-digit), `legacyPatientId`, `name`, `email`, `passwordHash`, `createdAt` |
 | `"Document"` | Uploaded prescription images: `id`, `userId`, `patientId`, `originalName`, `storedFilename`, `documentType`, `mimeType`, `filePath`, `status`, `uploadedAt` |
 | `"Analysis"` | Legacy analysis storage (currently minimally used): `id`, `documentId`, `summary`, `structuredResult` (JSONB), `isDemo`, `createdAt` |
+| `patient_onboarding` | Patient baseline health context: `id`, `user_id`, `patient_id`, `basic_info` (JSONB), `conditions` (JSONB), `custom_conditions` (JSONB), `history` (JSONB), `is_completed`, `created_at`, `updated_at` |
+| `patient_medications` | Recorded patient active & past medications: `id`, `patient_id`, `user_id`, `name`, `strength`, `status`, `indication`, `frequency`, `route`, `start_date`, `doctor`, `source`, `reliability`, `verification_status` |
+| `patient_timeline` | Medical timeline events & symptoms: `id`, `patient_id`, `user_id`, `event_date`, `category`, `title`, `description`, `source`, `facility`, `is_conflicting`, `created_at` |
 
 > Row-Level Security (RLS) is enabled on all tables in Supabase. Policies grant full access via the service role. See `scratch/supabase_schema.sql` for the exact policy definitions.
 

@@ -1,8 +1,8 @@
 ---
 Title: Known Issues
 Purpose: Bugs, security gaps, technical debt, and doc gaps
-Last verified against code: 2026-10-07
-Code version: no git
+Last verified against code: 2026-10-08
+Code version: a100256
 Owner: TBD
 ---
 

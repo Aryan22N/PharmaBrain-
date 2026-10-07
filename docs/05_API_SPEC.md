@@ -1,8 +1,8 @@
 ---
 Title: API Specification
 Purpose: Every endpoint with methods, auth, request/response, status codes, and curl examples
-Last verified against code: 2026-10-07
-Code version: no git
+Last verified against code: 2026-10-08
+Code version: a100256
 Owner: TBD
 ---
 
@@ -352,7 +352,7 @@ The frontend's API routes are in `frontend/app/api/`. They enforce JWT auth, the
 
 | Route | Method | Proxies to Python | Notes |
 |---|---|---|---|
-| `/api/ocr` | POST | `POST /ocr` | Saves image to `public/uploads/`, creates `Document` record |
+| `/api/ocr` | POST | `POST /ocr` | Saves image to `public/uploads/`, checks SHA256 duplicate image hash, creates `Document` record |
 | `/api/confirm` | POST | `POST /confirm/{id}` | |
 | `/api/discard` | POST | `POST /discard/{id}` | |
 | `/api/extractions/[id]` | GET | `GET /extractions/{id}` | |
@@ -364,5 +364,6 @@ The frontend's API routes are in `frontend/app/api/`. They enforce JWT auth, the
 | `/api/health` | GET | `GET /health` | |
 | `/api/auth` | POST | — | Login/register, returns JWT cookie |
 | `/api/user` | GET | — | Current user info from DB |
+| `/api/user/onboarding` | POST, GET | — | Saves & retrieves patient initial profile context (`patient_onboarding` table) |
 
 > Next.js API timeout: 360,000 ms (6 minutes) to accommodate CPU PaddleOCR inference time. Confirmed in `frontend/lib/api.ts` → `pythonBackendFetch()`.

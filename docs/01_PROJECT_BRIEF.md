@@ -1,8 +1,8 @@
 ---
 Title: Project Brief
 Purpose: Problem statement, scope, success criteria, and constraints
-Last verified against code: 2026-10-07
-Code version: no git
+Last verified against code: 2026-10-08
+Code version: a100256
 Owner: TBD
 ---
 
@@ -13,19 +13,21 @@ Owner: TBD
 Paper prescriptions in Indian clinical settings (outpatient departments, cancer care, general medicine) are handwritten or printed, and are a primary source of medication errors. Patients and care-team members cannot reliably read, store, or track prescription history.
 
 **Users:**
-- **Patients** — need to store, review, and share their prescription history.
+- **Patients** — need to store, review, complete initial profile context, and share their prescription history.
 - **Clinicians / pharmacists** — need to verify that the system's extraction is correct before the record is committed.
 - **Hospital administrators** — (future) need aggregate reporting on prescribing patterns.
 
 ## Vision
 
-A single-hospital deployment where any patient can photograph a prescription, upload it through a web portal, and receive a structured, clinician-verified medical record — with medicine names verified against an authenticated drug database and vital signs tracked over time.
+A single-hospital deployment where any patient can photograph a prescription, upload it through a web portal, establish baseline clinical history via onboarding, and receive a structured, clinician-verified medical record — with medicine names verified against an authenticated drug database and vital signs tracked over time.
 
 ## Scope: In Scope (Now)
 
 - Upload image (JPEG, PNG, WebP, max 10 MB) of a prescription.
 - Preprocess, run PaddleOCR, and send to Google Gemini for structuring.
+- Image sha256 hash deduplication detection to reject duplicate prescription scans.
 - Medicine name lookup against `medicine_master` (exact + fuzzy match via RapidFuzz).
+- Initial 4-step patient onboarding health context wizard (`/onboarding`) capturing demographics, chronic conditions, custom conditions, and past history into `patient_onboarding` table.
 - Human-in-the-loop review UI where the clinician can edit fields and confirm.
 - Confirmed records stored in Supabase PostgreSQL; vitals extracted to `observations`.
 - Patient timeline and vitals trend views.

@@ -1,8 +1,8 @@
 ---
 Title: Roadmap
 Purpose: Phased plan with effort, dependencies, and status
-Last verified against code: 2026-10-07
-Code version: no git
+Last verified against code: 2026-10-08
+Code version: a100256
 Owner: TBD
 ---
 
@@ -57,3 +57,4 @@ Items are ordered by impact. The first three are actionable this week.
 | R-16 | **Real-time WebSocket progress** — Replace client polling with WebSocket updates for OCR → LLM → validation pipeline stages | L | None | PLANNED | — |
 | R-17 | **Formal migration framework** — Add Alembic for DB schema migrations | M | None | PLANNED | [KI-13] |
 | R-18 | **Unified table schema** — Merge Next.js EHR tables (`"User"`, `"Document"`) with Python service tables under a single schema manager | L | R-17 | PLANNED | [KI-14] |
+| R-19 | **Patient Initial Onboarding Flow** — 4-step health context wizard (`/onboarding`) saving profile demographics, chronic conditions, and past history into `patient_onboarding` PostgreSQL table | M | None | Done | — |
