@@ -36,7 +36,7 @@ sequenceDiagram
     PyAPI->>PyAPI: analyze_prescription() — fix OCR typos, lookup drugs, check vitals
     PyAPI->>DB: INSERT extractions (status=PENDING_USER_CONFIRMATION)
     PyAPI-->>NextAPI: ExtractionPayload JSON
-    NextAPI->>NextAPI: Save image to public/uploads/ + INSERT Document record
+    NextAPI->>NextAPI: Upload image to Supabase Storage Bucket (OCR_Images/uploads/) + INSERT Document record
     NextAPI-->>UI: ExtractionPayload + image_url
     UI->>User: Redirect to /extractions/[id] for review
 

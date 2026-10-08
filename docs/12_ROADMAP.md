@@ -53,7 +53,7 @@ Items are ordered by impact. The first three are actionable this week.
 |---|---|---|---|---|---|
 | R-13 | **GPU acceleration** — Configure PaddleOCR with NVIDIA CUDA; update `docker-compose.yml` with GPU passthrough | M | GPU hardware | PLANNED | [KI-11] |
 | R-14 | **Multi-page PDF support** — Add PDF-to-image conversion (e.g. `pdf2image`) before the preprocessing stage | M | None | PLANNED | — |
-| R-15 | **Cloud object storage for images** — Move `public/uploads/` and `model/preprocessed/` to S3 or GCS with server-side encryption | M | None | PLANNED | [KI-12] |
+| R-15 | **Cloud object storage for images** — Move `public/uploads/` to Supabase Storage Cloud Bucket (`OCR_Images/uploads/`) with public CDN URLs | M | None | Done | [KI-12] |
 | R-16 | **Real-time WebSocket progress** — Replace client polling with WebSocket updates for OCR → LLM → validation pipeline stages | L | None | PLANNED | — |
 | R-17 | **Formal migration framework** — Add Alembic for DB schema migrations | M | None | PLANNED | [KI-13] |
 | R-18 | **Unified table schema** — Merge Next.js EHR tables (`"User"`, `"Document"`) with Python service tables under a single schema manager | L | R-17 | PLANNED | [KI-14] |

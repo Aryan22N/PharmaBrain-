@@ -352,7 +352,7 @@ The frontend's API routes are in `frontend/app/api/`. They enforce JWT auth, the
 
 | Route | Method | Proxies to Python | Notes |
 |---|---|---|---|
-| `/api/ocr` | POST | `POST /ocr` | Saves image to `public/uploads/`, checks SHA256 duplicate image hash, creates `Document` record |
+| `/api/ocr` | POST | `POST /ocr` | Uploads image to Supabase Storage Bucket (`OCR_Images/uploads/`), checks SHA256 duplicate image hash, creates `Document` record |
 | `/api/confirm` | POST | `POST /confirm/{id}` | |
 | `/api/discard` | POST | `POST /discard/{id}` | |
 | `/api/extractions/[id]` | GET | `GET /extractions/{id}` | |

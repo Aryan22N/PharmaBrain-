@@ -9,6 +9,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 
 ### Added
+- 2026-10-08 — Supabase Storage Cloud Bucket Integration: Migrated prescription document image storage from local disk directory (`frontend/public/uploads`) to Supabase Storage Cloud Bucket (`OCR_Images/uploads/`). Created `frontend/lib/supabaseStorage.ts` helper module, updated `frontend/app/api/ocr/route.ts` and API routes to store and serve public Supabase CDN URLs, created migration script `scratch/migrate_uploads_to_supabase.js`, and cleaned up local `public/uploads` directory.
 - 2026-10-08 — Patient Initial Profile Context Onboarding Flow: 4-step health context wizard (`frontend/app/onboarding/page.tsx` & `frontend/app/patient/onboarding/page.tsx`), PostgreSQL initial profile storage endpoint (`frontend/app/api/user/onboarding/route.ts`), and `patient_onboarding` database schema.
 - 2026-10-08 — Deduplication detection on prescription upload (`POST /api/ocr`) via SHA-256 image hashing.
 - 2026-10-08 — Discard draft functionality (`POST /api/discard/[id]`) to delete unconfirmed prescription drafts from database.

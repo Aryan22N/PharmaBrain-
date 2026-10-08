@@ -17,7 +17,7 @@ Owner: TBD
 | Data | Classification | Where Stored |
 |---|---|---|
 | Patient name, UHID | Personal health data | `raw_ocr.lines_json`, `extractions.analysis_json`, `confirmed_prescriptions.data_json` |
-| Prescription image | Personal health data | `frontend/public/uploads/` (local disk); `model/preprocessed/` (local disk) |
+| Prescription image | Personal health data | Supabase Storage Cloud Bucket (`OCR_Images/uploads/`) with public CDN URLs |
 | Diagnosis, medicines, vitals | Personal health data | `extractions.analysis_json`, `confirmed_prescriptions.data_json`, `observations` |
 | Doctor name, registration number | Professional personal data | `confirmed_prescriptions` |
 | Email and phone numbers (from clinic headers) | Personal data | **Masked before LLM call** by `mask_pii()` |

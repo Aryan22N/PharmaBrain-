@@ -54,13 +54,13 @@ flowchart TD
 
     subgraph Storage
         Supabase[("Supabase PostgreSQL")]
-        Disk[("frontend/public/uploads/\n model/preprocessed/")]
+        S3[("Supabase Storage Bucket\n(OCR_Images/uploads/)")]
     end
 
     Upload --> NextAPI
     NextAPI --> API_FE --> FastAPI
     NextAPI --> DB_FE --> Supabase
-    NextAPI --> Disk
+    NextAPI --> S3
 
     FastAPI --> Preprocess --> OCR --> Lines --> LLM --> Validator --> Confirm
     FastAPI --> Supabase

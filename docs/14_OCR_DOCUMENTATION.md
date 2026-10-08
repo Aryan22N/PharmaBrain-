@@ -2,7 +2,7 @@
 Title: OCR Engine & Vision Pipeline Documentation
 Purpose: Verified technical documentation of the Optical Character Recognition (OCR) pipeline, image preprocessing, spatial line reconstruction, LLM vision fusion, drug verification, database persistence, and frontend viewer.
 Last verified against code: 2026-10-08
-Code location: model/final_prescription_ocr_service_windows.py, frontend/app/api/ocr/route.ts, frontend/components/RawOcrViewer.tsx
+Code location: model/final_prescription_ocr_service_windows.py, frontend/app/api/ocr/route.ts, frontend/lib/supabaseStorage.ts, frontend/components/RawOcrViewer.tsx
 ---
 
 # 14 — OCR Engine & Vision Pipeline Documentation

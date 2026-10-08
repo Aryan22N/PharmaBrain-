@@ -100,11 +100,11 @@ Owner: TBD
 
 ---
 
-### [KI-12] Prescription images stored unencrypted on local disk — 🟡 Medium
+### [KI-12] Prescription images stored unencrypted on local disk — ✅ RESOLVED
 
-**Evidence:** `frontend/public/uploads/` and `model/preprocessed/` are plain files.  
-**Impact:** Prescription images (personal health data) are accessible to anyone with filesystem access.  
-**Fix:** Move to encrypted cloud object storage (Roadmap R-15).
+**Evidence:** Local `frontend/public/uploads/` plain file storage replaced with Supabase Storage Cloud Bucket (`OCR_Images/uploads/`) with public CDN URLs and encrypted transit.  
+**Impact:** Images are now stored in scalable cloud object storage rather than unencrypted local disk directories.  
+**Fix:** Implemented `frontend/lib/supabaseStorage.ts` helper and migrated all files to Supabase Storage Bucket `OCR_Images`.
 
 ---
 
