@@ -73,7 +73,7 @@ export async function POST(
         const prevResult = existingDocs[0].structuredResult || {};
         if (!rec.image_url && prevResult.image_url) {
           rec.image_url = prevResult.image_url;
-        } else if (!rec.image_url && existingDocs[0].storedFilename?.startsWith("/uploads/")) {
+        } else if (!rec.image_url && (existingDocs[0].storedFilename?.startsWith("/uploads/") || existingDocs[0].storedFilename?.startsWith("http://") || existingDocs[0].storedFilename?.startsWith("https://"))) {
           rec.image_url = existingDocs[0].storedFilename;
         }
         await query(

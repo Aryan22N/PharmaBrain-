@@ -138,23 +138,35 @@ export async function POST(req: NextRequest) {
 
     console.log(`[${new Date().toISOString()}] [API/OCR] Pipeline completed successfully in ${elapsedMs}ms`);
 
-    // Save uploaded image to public/uploads for direct browser viewing in Patient Summary
+    // Save uploaded image to Supabase Storage Bucket (with local fallback if unconfigured)
     let publicImageUrl = "/sample_prescription.png";
     try {
-      const path = await import("path");
-      const fs = await import("fs/promises");
-      const uploadsDir = path.join(process.cwd(), "public", "uploads");
-      await fs.mkdir(uploadsDir, { recursive: true });
+      const { uploadPrescriptionImageToSupabase } = await import("@/lib/supabaseStorage");
+      const storageRes = await uploadPrescriptionImageToSupabase(
+        fileBytes,
+        file.name,
+        file.type || "image/png"
+      );
 
-      const ext = path.extname(file.name) || ".png";
-      const cleanBase = file.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, "_");
-      const safeFilename = `${cleanBase}_${Date.now()}${ext}`;
-      const diskPath = path.join(uploadsDir, safeFilename);
-      const fileBytes = Buffer.from(await file.arrayBuffer());
-      await fs.writeFile(diskPath, fileBytes);
-      publicImageUrl = `/uploads/${safeFilename}`;
+      if (storageRes.success && storageRes.publicUrl) {
+        publicImageUrl = storageRes.publicUrl;
+        console.log(`[API/OCR] Prescription image stored in Supabase Bucket: ${publicImageUrl}`);
+      } else {
+        console.warn("[API/OCR] Supabase storage upload warning:", storageRes.error, "Falling back to local public/uploads");
+        const path = await import("path");
+        const fs = await import("fs/promises");
+        const uploadsDir = path.join(process.cwd(), "public", "uploads");
+        await fs.mkdir(uploadsDir, { recursive: true });
+
+        const ext = path.extname(file.name) || ".png";
+        const cleanBase = file.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, "_");
+        const safeFilename = `${cleanBase}_${Date.now()}${ext}`;
+        const diskPath = path.join(uploadsDir, safeFilename);
+        await fs.writeFile(diskPath, fileBytes);
+        publicImageUrl = `/uploads/${safeFilename}`;
+      }
     } catch (saveErr) {
-      console.warn("Could not save image to public/uploads:", saveErr);
+      console.warn("Could not save image to Supabase bucket or public/uploads:", saveErr);
     }
 
     // Immediately save to Patient Summary as NOT CONFIRMED so it appears in the dashboard
