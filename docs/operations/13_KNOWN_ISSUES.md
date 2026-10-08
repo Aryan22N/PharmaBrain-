@@ -56,13 +56,13 @@ Owner: TBD
 
 **Evidence:** `model/final_prescription_ocr_service_windows.py` → `STARTER` list — 27 drugs.  
 **Impact:** Most medicine names on real prescriptions will not be found in the database, generating `unverified` warnings. Fuzzy matching is limited.  
-**Fix:** Import a licensed, pharmacist-verified Indian medicine dataset. See [docs/06_MEDICINE_KNOWLEDGE_BASE.md](06_MEDICINE_KNOWLEDGE_BASE.md) and [docs/12_ROADMAP.md](12_ROADMAP.md) R-06.
+**Fix:** Import a licensed, pharmacist-verified Indian medicine dataset. See [docs/model/06_MEDICINE_KNOWLEDGE_BASE.md](../model/06_MEDICINE_KNOWLEDGE_BASE.md) and [docs/architecture/12_ROADMAP.md](../architecture/12_ROADMAP.md) R-06.
 
 ---
 
 ### [KI-07] No evaluation benchmark exists — 🟠 High
 
-**Evidence:** `docs/07_EVALUATION.md` — "No evaluation has been run against a formal test set."  
+**Evidence:** `docs/model/07_EVALUATION.md` — "No evaluation has been run against a formal test set."  
 **Impact:** Accuracy claims (> 95%) are unverified engineering targets.  
 **Fix:** Build annotated test set, run evaluation, publish results. See R-07, R-08 in roadmap.
 
@@ -144,12 +144,12 @@ Owner: TBD
 
 | Item | Location | What needs verification |
 |---|---|---|
-| Production `medicine_master` row count (claimed 253,313) | `docs/06_MEDICINE_KNOWLEDGE_BASE.md` | Check actual row count in Supabase; the number may vary |
-| `MODEL_CANDIDATES` validity | `docs/10_PROMPT_REGISTRY.md` | Verify each model name against Google AI API documentation |
+| Production `medicine_master` row count (claimed 253,313) | `docs/model/06_MEDICINE_KNOWLEDGE_BASE.md` | Check actual row count in Supabase; the number may vary |
+| `MODEL_CANDIDATES` validity | `docs/model/10_PROMPT_REGISTRY.md` | Verify each model name against Google AI API documentation |
 | OCR processing time estimates ("5–15 s on CPU") | Old `Doc/system_design.md` | Benchmark on target hardware |
-| Target accuracy numbers from `accuracy_improvement_plan.md` | `docs/07_EVALUATION.md` | Run formal evaluation to produce real numbers |
-| Medicine dataset licence (CDSCO / Jan Aushadhi) | `docs/06_MEDICINE_KNOWLEDGE_BASE.md` | Confirm licence terms before production use |
-| DPDPA 2023 compliance for Gemini data transfer | `docs/08_SECURITY_PRIVACY.md` | Confirm with legal counsel |
+| Target accuracy numbers from `accuracy_improvement_plan.md` | `docs/model/07_EVALUATION.md` | Run formal evaluation to produce real numbers |
+| Medicine dataset licence (CDSCO / Jan Aushadhi) | `docs/model/06_MEDICINE_KNOWLEDGE_BASE.md` | Confirm licence terms before production use |
+| DPDPA 2023 compliance for Gemini data transfer | `docs/operations/08_SECURITY_PRIVACY.md` | Confirm with legal counsel |
 | PaddlePaddle version actually installed in Docker | `model/requirements.txt` specifies 2.6.2 but comments mention 3.x | Check installed version in running container |
 
 ---

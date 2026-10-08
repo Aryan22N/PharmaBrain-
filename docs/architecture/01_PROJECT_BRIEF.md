@@ -45,7 +45,7 @@ A single-hospital deployment where any patient can photograph a prescription, up
 
 ## Success Criteria
 
-Measurable targets linked to evaluation methodology in [docs/07_EVALUATION.md](07_EVALUATION.md):
+Measurable targets linked to evaluation methodology in [docs/model/07_EVALUATION.md](../model/07_EVALUATION.md):
 
 | Criterion | Target |
 |---|---|
@@ -55,7 +55,7 @@ Measurable targets linked to evaluation methodology in [docs/07_EVALUATION.md](0
 | Clinician review cycle time | < 60 seconds per prescription |
 | No phantom medicines (hallucinations) | 0 hallucinations when `SEND_IMAGE_TO_LLM = True` |
 
-> No evaluation has been run against a formal test set yet. See [docs/07_EVALUATION.md](07_EVALUATION.md).
+> No evaluation has been run against a formal test set yet. See [docs/model/07_EVALUATION.md](../model/07_EVALUATION.md).
 
 ## Constraints
 

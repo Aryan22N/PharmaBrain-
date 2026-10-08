@@ -154,7 +154,7 @@ Use Next.js 16 App Router. Frontend API routes use `pg.Pool` directly via `front
 **Consequences:**
 - Two separate DB access patterns in the same Supabase database (Next.js via `pg` pool, Python via SQLAlchemy).
 - Table naming conventions differ: PascalCase quoted (Next.js) vs snake_case unquoted (Python).
-- This dual-namespace design is a known technical debt item. See [docs/13_KNOWN_ISSUES.md](13_KNOWN_ISSUES.md).
+- This dual-namespace design is a known technical debt item. See [docs/operations/13_KNOWN_ISSUES.md](../operations/13_KNOWN_ISSUES.md).
 
 ---
 

@@ -116,7 +116,7 @@ flowchart TD
 | Google Gemini API | Prescription image bytes + OCR line text | Emails and phone numbers replaced with `[EMAIL]`/`[PHONE]` by `mask_pii()` (Confirmed) |
 | Supabase PostgreSQL | All structured data including patient records | Encrypted in transit via TLS (connection string uses `sslmode=require` via Supabase default) |
 
-> Patient names, UHID, diagnosis, and medicine data **are sent to Google Gemini**. This is a material privacy consideration. See [docs/08_SECURITY_PRIVACY.md](08_SECURITY_PRIVACY.md).
+> Patient names, UHID, diagnosis, and medicine data **are sent to Google Gemini**. This is a material privacy consideration. See [docs/operations/08_SECURITY_PRIVACY.md](../operations/08_SECURITY_PRIVACY.md).
 
 ## Failure Modes
 

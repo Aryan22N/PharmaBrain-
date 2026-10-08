@@ -52,13 +52,13 @@ Owner: TBD
 | WHO ATC / RxNorm | WHO / US NLM open access — `UNVERIFIED` before production use | High for generics, low for Indian brands | `UNVERIFIED` |
 | Kaggle / GitHub Indian medicine datasets | Varies — `UNVERIFIED` before production use | High for Indian brands | `UNVERIFIED` |
 
-> A licensed pharmacist must verify the medicine dataset before production deployment. See [docs/01_PROJECT_BRIEF.md](01_PROJECT_BRIEF.md).
+> A licensed pharmacist must verify the medicine dataset before production deployment. See [docs/architecture/01_PROJECT_BRIEF.md](../architecture/01_PROJECT_BRIEF.md).
 
 ---
 
 ## Database Schema
 
-The `medicine_master` table schema is defined in `model/final_prescription_ocr_service_windows.py`. See [docs/04_DATA_MODEL.md](04_DATA_MODEL.md) for the full column table.
+The `medicine_master` table schema is defined in `model/final_prescription_ocr_service_windows.py`. See [docs/api-data/04_DATA_MODEL.md](../api-data/04_DATA_MODEL.md) for the full column table.
 
 The `load_med_index()` function also handles an extended column schema (`brand_name`, `generic_name`, `composition_raw`, `active_ingredients`, `strength_text`, `therapeutic_class`) used when importing bulk datasets with different column names.
 
@@ -153,4 +153,4 @@ A normalised multi-table schema to replace the flat `medicine_master`:
 | `medicine_aliases` | OCR error aliases and brand variants |
 | `medicine_ingredients` | Many-to-many: links medicines to ingredient salts with `strength_mg` |
 
-Matching algorithm: SQL trigram (`pg_trgm`) for candidate retrieval + `pgvector` for embedding-based fallback + relational SQL as sole fact source. See [docs/11_DECISIONS.md](11_DECISIONS.md) for the full ADR.
+Matching algorithm: SQL trigram (`pg_trgm`) for candidate retrieval + `pgvector` for embedding-based fallback + relational SQL as sole fact source. See [docs/architecture/11_DECISIONS.md](../architecture/11_DECISIONS.md) for the full ADR.

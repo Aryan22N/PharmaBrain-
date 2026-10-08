@@ -25,7 +25,7 @@ PENDING_USER_CONFIRMATION → CONFIRMED
                           ↘ DISCARDED
 ```
 
-See state diagram in [docs/04_DATA_MODEL.md](04_DATA_MODEL.md).
+See state diagram in [docs/api-data/04_DATA_MODEL.md](04_DATA_MODEL.md).
 
 ---
 

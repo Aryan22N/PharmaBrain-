@@ -84,7 +84,7 @@ Emails and phone numbers in the text are replaced with `[EMAIL]` and `[PHONE]` b
 
 ### Output Schema
 
-The response is validated against the `Prescription` Pydantic model. See [docs/04_DATA_MODEL.md](04_DATA_MODEL.md) for the full schema.
+The response is validated against the `Prescription` Pydantic model. See [docs/api-data/04_DATA_MODEL.md](../api-data/04_DATA_MODEL.md) for the full schema.
 
 ### Known Failure Cases
 

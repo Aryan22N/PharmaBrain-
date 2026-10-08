@@ -90,21 +90,22 @@ npm run dev
 
 ## Documentation Index
 
-| File | Purpose |
-|---|---|
-| [docs/01_PROJECT_BRIEF.md](docs/01_PROJECT_BRIEF.md) | Problem, scope, success criteria |
-| [docs/02_ARCHITECTURE.md](docs/02_ARCHITECTURE.md) | System and component diagrams |
-| [docs/03_PIPELINE_SPEC.md](docs/03_PIPELINE_SPEC.md) | Every pipeline stage in detail |
-| [docs/04_DATA_MODEL.md](docs/04_DATA_MODEL.md) | All database tables and schemas |
-| [docs/05_API_SPEC.md](docs/05_API_SPEC.md) | Every API endpoint with curl examples |
-| [docs/06_MEDICINE_KNOWLEDGE_BASE.md](docs/06_MEDICINE_KNOWLEDGE_BASE.md) | Medicine DB, matching logic |
-| [docs/07_EVALUATION.md](docs/07_EVALUATION.md) | Metrics and test results |
-| [docs/08_SECURITY_PRIVACY.md](docs/08_SECURITY_PRIVACY.md) | Data classification, PII, compliance |
-| [docs/09_RUNBOOK.md](docs/09_RUNBOOK.md) | Setup, run, troubleshoot, recipes |
-| [docs/10_PROMPT_REGISTRY.md](docs/10_PROMPT_REGISTRY.md) | All LLM prompts as versioned registry |
-| [docs/11_DECISIONS.md](docs/11_DECISIONS.md) | Architecture Decision Records |
-| [docs/12_ROADMAP.md](docs/12_ROADMAP.md) | Phased roadmap with status |
-| [docs/13_KNOWN_ISSUES.md](docs/13_KNOWN_ISSUES.md) | Bugs, risks, tech debt |
-| [docs/GLOSSARY.md](docs/GLOSSARY.md) | Domain terms and acronyms |
-| [AGENTS.md](AGENTS.md) | AI agent instructions (read first) |
-| [CHANGELOG.md](CHANGELOG.md) | Change log |
+| File | Module | Purpose |
+|---|---|---|
+| [docs/architecture/01_PROJECT_BRIEF.md](docs/architecture/01_PROJECT_BRIEF.md) | `architecture/` | Problem, scope, success criteria |
+| [docs/architecture/02_ARCHITECTURE.md](docs/architecture/02_ARCHITECTURE.md) | `architecture/` | System and component diagrams |
+| [docs/architecture/11_DECISIONS.md](docs/architecture/11_DECISIONS.md) | `architecture/` | Architecture Decision Records |
+| [docs/architecture/12_ROADMAP.md](docs/architecture/12_ROADMAP.md) | `architecture/` | Phased roadmap with status |
+| [docs/architecture/GLOSSARY.md](docs/architecture/GLOSSARY.md) | `architecture/` | Domain terms and acronyms |
+| [docs/ocr/14_OCR_DOCUMENTATION.md](docs/ocr/14_OCR_DOCUMENTATION.md) | `ocr/` | PaddleOCR engine & text line extraction |
+| [docs/model/06_MEDICINE_KNOWLEDGE_BASE.md](docs/model/06_MEDICINE_KNOWLEDGE_BASE.md) | `model/` | Medicine DB, matching logic |
+| [docs/model/07_EVALUATION.md](docs/model/07_EVALUATION.md) | `model/` | Metrics and test results |
+| [docs/model/10_PROMPT_REGISTRY.md](docs/model/10_PROMPT_REGISTRY.md) | `model/` | All LLM prompts as versioned registry |
+| [docs/pipeline/03_PIPELINE_SPEC.md](docs/pipeline/03_PIPELINE_SPEC.md) | `pipeline/` | Every pipeline stage in detail |
+| [docs/api-data/04_DATA_MODEL.md](docs/api-data/04_DATA_MODEL.md) | `api-data/` | All database tables and schemas |
+| [docs/api-data/05_API_SPEC.md](docs/api-data/05_API_SPEC.md) | `api-data/` | Every API endpoint with curl examples |
+| [docs/operations/08_SECURITY_PRIVACY.md](docs/operations/08_SECURITY_PRIVACY.md) | `operations/` | Data classification, PII, compliance |
+| [docs/operations/09_RUNBOOK.md](docs/operations/09_RUNBOOK.md) | `operations/` | Setup, run, troubleshoot, recipes |
+| [docs/operations/13_KNOWN_ISSUES.md](docs/operations/13_KNOWN_ISSUES.md) | `operations/` | Bugs, risks, tech debt |
+| [AGENTS.md](AGENTS.md) | — | AI agent instructions (read first) |
+| [CHANGELOG.md](CHANGELOG.md) | — | Change log |

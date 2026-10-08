@@ -67,7 +67,7 @@ The accuracy improvement plan (`Doc/accuracy_improvement_plan.md`) states target
 | Medicine name & dose precision | > 95% |
 | Clinical diagnosis & advice extraction | > 90% |
 
-These numbers were not measured — they are engineering targets. They are documented here as `UNVERIFIED`. See [docs/13_KNOWN_ISSUES.md](13_KNOWN_ISSUES.md) — "No evaluation has been run".
+These numbers were not measured — they are engineering targets. They are documented here as `UNVERIFIED`. See [docs/operations/13_KNOWN_ISSUES.md](../operations/13_KNOWN_ISSUES.md) — "No evaluation has been run".
 
 ---
 

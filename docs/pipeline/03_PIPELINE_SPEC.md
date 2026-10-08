@@ -175,7 +175,7 @@ sequenceDiagram
 
 **Schema enforcement:** `Prescription.model_validate_json(response.text)` — Pydantic v2 validates the JSON against the schema. Any validation error is treated as a model failure and triggers fallback.
 
-**Prompt text:** See [docs/10_PROMPT_REGISTRY.md](10_PROMPT_REGISTRY.md) for the exact text and version.
+**Prompt text:** See [docs/model/10_PROMPT_REGISTRY.md](../model/10_PROMPT_REGISTRY.md) for the exact text and version.
 
 ---
 

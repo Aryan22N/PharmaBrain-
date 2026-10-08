@@ -197,13 +197,13 @@ ON CONFLICT (name) DO NOTHING;
 
 1. The service supports `PaddleOCR` and `PaddleOCR-VL` via `OCR_ENGINE_TYPE` env var.
 2. To add a third engine: add an `elif` branch in the OCR init block and handle its output format in `run_ocr()`.
-3. Update `docs/02_ARCHITECTURE.md` and `docs/03_PIPELINE_SPEC.md`.
+3. Update `docs/architecture/02_ARCHITECTURE.md` and `docs/pipeline/03_PIPELINE_SPEC.md`.
 
 ### Add a new Gemini model
 
 1. Add the model name to `MODEL_CANDIDATES` list in `model/final_prescription_ocr_service_windows.py`.
 2. Test it manually via `POST /ocr`.
-3. Update `docs/10_PROMPT_REGISTRY.md` if the model requires different configuration.
+3. Update `docs/model/10_PROMPT_REGISTRY.md` if the model requires different configuration.
 4. Add a `CHANGELOG.md` entry.
 
 ### Run a database migration
@@ -212,4 +212,4 @@ ON CONFLICT (name) DO NOTHING;
 2. Apply it to your Supabase instance via the dashboard SQL editor or `psql`.
 3. Update the SQLAlchemy `Table(...)` definition in `model/final_prescription_ocr_service_windows.py`.
 4. Update `scratch/supabase_schema.sql` for reference.
-5. Update `docs/04_DATA_MODEL.md`.
+5. Update `docs/api-data/04_DATA_MODEL.md`.

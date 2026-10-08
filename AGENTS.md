@@ -8,8 +8,8 @@
 
 Single-Hospital-Pro converts a photo of a medical prescription into a structured, human-verified patient medical record. It is a two-service system: a Python FastAPI backend (`model/`) that runs OCR and LLM structuring, and a Next.js 16 frontend (`frontend/`) that provides the clinician review UI. **All LLM output is a draft — a licensed clinician must confirm before any clinical use.**
 
-Architecture details: [docs/02_ARCHITECTURE.md](docs/02_ARCHITECTURE.md)  
-Pipeline details: [docs/03_PIPELINE_SPEC.md](docs/03_PIPELINE_SPEC.md)
+Architecture details: [docs/architecture/02_ARCHITECTURE.md](docs/architecture/02_ARCHITECTURE.md)  
+Pipeline details: [docs/pipeline/03_PIPELINE_SPEC.md](docs/pipeline/03_PIPELINE_SPEC.md)
 
 ---
 
@@ -51,12 +51,12 @@ Pipeline details: [docs/03_PIPELINE_SPEC.md](docs/03_PIPELINE_SPEC.md)
 | Task | Edit this file |
 |---|---|
 | Change OCR preprocessing | `model/final_prescription_ocr_service_windows.py` → `preprocess_image()` |
-| Change LLM prompt | `model/final_prescription_ocr_service_windows.py` → `SYSTEM_PROMPT` + update `docs/10_PROMPT_REGISTRY.md` |
-| Change Pydantic schema | `model/final_prescription_ocr_service_windows.py` → `Prescription`, `Medicine`, `Val` + update `docs/04_DATA_MODEL.md` |
-| Change DB schema | Update SQLAlchemy Table definitions in same file + `scratch/supabase_schema.sql` + update `docs/04_DATA_MODEL.md` |
+| Change LLM prompt | `model/final_prescription_ocr_service_windows.py` → `SYSTEM_PROMPT` + update `docs/model/10_PROMPT_REGISTRY.md` |
+| Change Pydantic schema | `model/final_prescription_ocr_service_windows.py` → `Prescription`, `Medicine`, `Val` + update `docs/api-data/04_DATA_MODEL.md` |
+| Change DB schema | Update SQLAlchemy Table definitions in same file + `scratch/supabase_schema.sql` + update `docs/api-data/04_DATA_MODEL.md` |
 | Change confidence thresholds | `model/final_prescription_ocr_service_windows.py` → `THRESH_OK`, `THRESH_LOW`, `CRITICAL_FIELDS` |
 | Change LLM model candidates | `model/final_prescription_ocr_service_windows.py` → `MODEL_CANDIDATES` |
-| Add/edit API endpoint | `model/final_prescription_ocr_service_windows.py` + update `docs/05_API_SPEC.md` |
+| Add/edit API endpoint | `model/final_prescription_ocr_service_windows.py` + update `docs/api-data/05_API_SPEC.md` |
 | Change auth / JWT | `frontend/lib/auth.ts` |
 | Change frontend DB queries | `frontend/lib/db.ts` |
 | Change upload UI | `frontend/app/upload/page.tsx` |

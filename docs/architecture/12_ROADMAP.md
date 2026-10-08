@@ -32,7 +32,7 @@ Items are ordered by impact. The first three are actionable this week.
 |---|---|---|---|---|---|
 | R-06 | **Ingest licensed medicine dataset** — Obtain and import NLEM / Jan Aushadhi / CDSCO catalogue into `medicine_master` with pharmacist verification | L | Licence decision | Not started | [KI-06] |
 | R-07 | **Build evaluation test set** — Annotate 100 prescription images with ground-truth field values | M | None | Not started | [KI-07] |
-| R-08 | **Run baseline evaluation** — Write evaluation script, run against test set, publish results in `docs/07_EVALUATION.md` | M | R-07 | Not started | [KI-07] |
+| R-08 | **Run baseline evaluation** — Write evaluation script, run against test set, publish results in `docs/model/07_EVALUATION.md` | M | R-07 | Not started | [KI-07] |
 | R-09 | **Verify `MODEL_CANDIDATES` list** — Confirm which model names are currently valid in the Google AI API; remove invalid names | S | None | Not started | [KI-08] |
 
 ---
