@@ -19,6 +19,9 @@ A clinical prescription intelligence system that converts a photo of a medical p
 | Human-in-the-loop review UI | **Working** |
 | Prescription confirmation + audit log | **Working** |
 | Vitals time-series (BP, sugar, pulse, weight) | **Working** |
+| Longitudinal Trend Analysis Engine (5-date gating & dual-tier cache) | **Working** |
+| Generalized Medication Lifecycle Engine & Audit Trail | **Working** |
+| Prescription scan inspector with high-res zoom | **Working** |
 | Patient dashboard / timeline | **Working** |
 | Prescription image cloud storage (Supabase Bucket `OCR_Images`) | **Working** |
 | Docker multi-container deployment | **Working** |
@@ -112,6 +115,8 @@ npm run dev
 | [docs/pipeline/15_MEDICAL_TIMELINE_AND_AI_ANALYSIS.md](docs/pipeline/15_MEDICAL_TIMELINE_AND_AI_ANALYSIS.md) | `pipeline/` | Medical timeline architecture, tables & Gemini AI summary engine |
 | [docs/api-data/04_DATA_MODEL.md](docs/api-data/04_DATA_MODEL.md) | `api-data/` | All database tables and schemas |
 | [docs/api-data/05_API_SPEC.md](docs/api-data/05_API_SPEC.md) | `api-data/` | Every API endpoint with curl examples |
+| [docs/Medication-Lifecycle/README.md](docs/Medication-Lifecycle/README.md) | `Medication-Lifecycle/` | Generalized medication lifecycle engine, audit trail & prescription image inspection |
+| [docs/Trend-Analysis/README.md](docs/Trend-Analysis/README.md) | `Trend-Analysis/` | Longitudinal vitals trend analysis engine, 5-date gating & dual-tier cache |
 | [docs/operations/08_SECURITY_PRIVACY.md](docs/operations/08_SECURITY_PRIVACY.md) | `operations/` | Data classification, PII, compliance |
 | [docs/operations/09_RUNBOOK.md](docs/operations/09_RUNBOOK.md) | `operations/` | Setup, run, troubleshoot, recipes |
 | [docs/operations/13_KNOWN_ISSUES.md](docs/operations/13_KNOWN_ISSUES.md) | `operations/` | Bugs, risks, tech debt |

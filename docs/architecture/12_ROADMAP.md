@@ -58,3 +58,5 @@ Items are ordered by impact. The first three are actionable this week.
 | R-17 | **Formal migration framework** — Add Alembic for DB schema migrations | M | None | PLANNED | [KI-13] |
 | R-18 | **Unified table schema** — Merge Next.js EHR tables (`"User"`, `"Document"`) with Python service tables under a single schema manager | L | R-17 | PLANNED | [KI-14] |
 | R-19 | **Patient Initial Onboarding Flow** — 4-step health context wizard (`/onboarding`) saving profile demographics, chronic conditions, and past history into `patient_onboarding` PostgreSQL table | M | None | Done | — |
+| R-20 | **Longitudinal Vitals Trend Analysis Engine** — Statistical trajectory engine, ACC/AHA BP & ADA glycemic clinical reference bands, 5-date gating, dual-tier hash caching, and Gemini AI patient narratives (`/patient/trends`) | M | None | Done | — |
+| R-21 | **Generalized Medication Lifecycle Management** — Non-destructive reconciliation across multi-doctor orders, 7 lifecycle categories, duration parsing, expected end-date tracking, educational status transition modals, and source prescription scan inspection (`/patient/medicines`) | M | None | Done | — |

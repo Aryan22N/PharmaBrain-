@@ -1,8 +1,8 @@
 # Implementation Status: Generalized Medication Lifecycle Management
 
-**Branch:** `medicine`  
+**Branch:** `main` (merged from `medicine`)  
 **Date:** 2026-10-11  
-**Status:** Complete & Verified (41 / 41 Automated Tests Passing)  
+**Status:** Complete & Verified in Production (41 / 41 Automated Tests Passing)  
 
 ---
 

@@ -77,9 +77,12 @@ flowchart TD
 | DB pool (frontend) | `frontend/lib/db.ts` | PostgreSQL connection pool for Next.js queries | pg |
 | API client (frontend) | `frontend/lib/api.ts` | HTTP client wrapping Python service calls | fetch |
 | MedicineEditor | `frontend/components/MedicineEditor.tsx` | Interactive medicine field editor before confirmation | React |
+| Medication Lifecycle Engine | `frontend/lib/medicationLifecycle.ts` | Generalized reconciliation engine across prescriptions, multi-doctor orders, continuation detection, duration parsing & conflict tracking | TypeScript, Levenshtein, Regex |
+| Medication Management UI | `frontend/app/patient/medicines/` | Patient medication dashboard, status transition modals, and source prescription image inspector | React, Lucide, TailwindCSS 4 |
+| Longitudinal Trend Engine | `frontend/lib/trendAnalysis.ts` & `frontend/lib/trends.ts` | 5-date gating, statistical trajectory, reference band classification, dual-tier cache | TypeScript, SVG, Gemini API |
 | Bulk importer | `model/import_medicines_bulk.py` | High-speed batch import of CSV/JSON datasets into `medicine_master` | SQLAlchemy, csv |
 | Standalone OCR server | `app.py` | Minimal OCR endpoint — raw bounding boxes only, no LLM, no DB | FastAPI, PaddleOCR |
-| Schema SQL | `scratch/supabase_schema.sql` | Reference SQL for all tables including Next.js EHR tables | PostgreSQL |
+| Schema SQL | `scratch/supabase_schema.sql` | Reference SQL for all tables including `patient_medications`, `patient_medication_audit`, `patient_trend_cache` | PostgreSQL |
 
 ## Current vs Target Architecture
 

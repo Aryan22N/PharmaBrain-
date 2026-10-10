@@ -20,6 +20,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
   - Backfilled existing patient records with real prescription scans uploaded to Supabase Storage.
 
 ### Added
+- 2026-10-11 — Generalized Prescription-Based Medication Lifecycle Management & Source Prescription Scan Inspection:
+  - Created generalized reconciliation engine (`frontend/lib/medicationLifecycle.ts`) supporting ongoing treatments across multiple medical conditions, injuries, and follow-up visits without accidental deactivations.
+  - Implemented 7 deterministic lifecycle categories: `NEW_COURSE`, `POSSIBLE_CONTINUATION`, `CHANGE_IN_STRENGTH_OR_INSTRUCTIONS`, `OVERLAPPING_TREATMENT`, `CONFLICTING_INSTRUCTIONS`, `POTENTIAL_DUPLICATE`, and `INSUFFICIENT_INFORMATION`.
+  - Added duration parsing (`days`, `weeks`, `months`, `STAT`), expected end-date tracking, and review workflows for passed end-dates.
+  - Extended PostgreSQL schema with `patient_medications` and immutable `patient_medication_audit` tables for clinical auditability.
+  - Implemented REST API routes `GET/POST /api/patient/medicines` and `PATCH/PUT /api/patient/medicines/[id]` with mandatory reason validation for holds and discontinuations.
+  - Built comprehensive patient dashboard at `/patient/medicines` with `Current`, `History`, and `Needs Review` views, doctor/indication filtering, and removed misleading badges.
+  - Built educational status transition modal explaining clinical significance of Completed, Hold, and Discontinue with quick-select suggested reason chips.
+  - Built "Source Prescription Inspection" modal featuring high-resolution physical prescription scan display, hover zoom, click-to-view in new tab, and direct external link.
+  - Added dynamic high-res image serving route (`frontend/app/uploads/[...slug]/route.ts`) with automatic fallback to prevent 404s.
+  - Created 41 automated tests in 14 test suites (`scratch/test_medication_lifecycle.mjs`) passing with 100% success rate.
+  - Added comprehensive architecture specification in `docs/Medication-Lifecycle/README.md` and `docs/Medication-Lifecycle/IMPLEMENTATION_STATUS.md`.
 - 2026-10-10 — Longitudinal Vitals Analysis, Risk Staging & Interactive Trends (`feature/Krishna`):
   - Created statistical trajectory engine (`frontend/lib/trends.ts`) implementing deterministic clinical guidelines (AHA/ACC 2017 for Blood Pressure stages and sustained rise warnings; ADA 2024 for Glycemia/HbA1c).
   - Built Next.js longitudinal trends API endpoint (`frontend/app/api/patient/trends/route.ts`) querying Supabase `observations` table, deduplicating readings, computing pairwise deltas ($\Delta$), and generating patient-friendly AI health reviews via Google Gemini (`PROMPT-002`).

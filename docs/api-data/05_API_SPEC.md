@@ -385,12 +385,37 @@ The frontend's API routes are in `frontend/app/api/`. They enforce JWT auth, the
 | `/api/patients/[id]/prescriptions` | GET | `GET /patients/{id}/prescriptions` | Fetches confirmed prescriptions for patient |
 | `/api/patients/[id]/observations` | GET | `GET /patients/{id}/observations` | Fetches vital observations time-series |
 | `/api/patient/trends` | GET | `POST /patients/{patient_id}/trends_summary` | Evaluates longitudinal statistical trends (AHA/ACC BP, ADA glucose), deltas, and Gemini AI patient narrative |
+| `/api/patient/medicines` | GET, POST | — | Longitudinal medication lifecycle management. GET returns `{ current, history, needsReview, all, stats }` with resolved high-res prescription scan URLs. POST creates new manual course. |
+| `/api/patient/medicines/[id]` | PATCH, PUT | — | PATCH transitions lifecycle status (`COMPLETED`, `ON_HOLD`, `DISCONTINUED`, `ACTIVE`) with mandatory clinical reason. PUT resolves review conflicts. Writes audit log. |
+| `/uploads/[...slug]` | GET | — | Dynamic high-res image serving route for prescription scans; checks `/public/uploads/` with transparent fallback to `/sample_prescription.png`. |
 | `/api/health` | GET | `GET /health` | Health check proxy |
 | `/api/auth` | POST | — | Login/register, returns JWT cookie |
 | `/api/user` | GET | — | Current user info from DB |
 | `/api/user/onboarding` | POST, GET | — | Saves & retrieves patient initial profile context (`patient_onboarding` table) |
 | `/api/user/dashboard` | GET | — | Returns patient profile, timeline, vitals trends, and confirmed/pending documents with resolved public Supabase Storage `imageUrl` |
 | `/api/user/save-ocr` | POST | — | Direct helper to persist confirmed OCR payload into `Document` and `Analysis` tables |
+
+---
+
+### Medication Lifecycle Endpoints
+
+#### `GET /api/patient/medicines`
+Aggregates all medications from confirmed prescriptions and `patient_medications`, executes the generalized reconciliation engine, and returns partitioned courses:
+- **`current`**: Medications currently ongoing (`ACTIVE`, `ON_HOLD`).
+- **`history`**: Terminated regimens (`COMPLETED`, `DISCONTINUED`).
+- **`needsReview`**: Regimens requiring clinical attention (`NEEDS_REVIEW`, conflicting instructions, or changed strength).
+- **`imageUrl`**: Resolved high-resolution scan URL for each course anchored to originating physical prescription scans.
+
+#### `PATCH /api/patient/medicines/[id]`
+Applies a patient or clinician lifecycle transition:
+- **Body**: `{ "status": "COMPLETED" | "ON_HOLD" | "DISCONTINUED" | "ACTIVE", "reason": "Mandatory explanation string" }`
+- **Validation**: Enforces non-empty reason for discontinuations and holds (returns HTTP 422 if empty).
+- **Audit Logging**: Appends record into `patient_medication_audit`.
+
+#### `PUT /api/patient/medicines/[id]`
+Confirms a reviewed conflict or dosage change:
+- **Body**: `{ "confirmKeep": true }`
+- **Action**: Moves course from `NEEDS_REVIEW` to `ACTIVE`, clears `is_conflicting`, and logs audit entry.
 
 > Next.js API timeout: 360,000 ms (6 minutes) to accommodate CPU PaddleOCR inference time. Confirmed in `frontend/lib/api.ts` → `pythonBackendFetch()`.
 

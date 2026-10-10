@@ -103,12 +103,66 @@ erDiagram
         bool isDemo
         varchar createdAt
     }
+    patient_medications {
+        int id PK
+        varchar patient_id
+        int user_id
+        int prescription_id FK
+        int document_id FK
+        varchar name
+        varchar normalized_name
+        varchar strength
+        varchar status
+        varchar indication
+        varchar frequency
+        varchar route
+        varchar prescription_date
+        varchar start_date
+        varchar duration_raw
+        int duration_days
+        varchar expected_end_date
+        varchar actual_end_date
+        text discontinued_reason
+        text status_reason
+        varchar doctor
+        varchar reference_id
+        varchar reconciliation_category
+        text reconciliation_notes
+        bool is_conflicting
+        text conflict_details
+        varchar source
+        varchar reliability
+        varchar verification_status
+    }
+    patient_medication_audit {
+        int id PK
+        int medication_id FK
+        varchar patient_id
+        int user_id
+        varchar action
+        varchar previous_status
+        varchar new_status
+        text reason
+        varchar actor
+        timestamp created_at
+    }
+    patient_trend_cache {
+        int id PK
+        varchar patient_id
+        varchar cache_key
+        text data_hash
+        jsonb payload
+        varchar expires_at
+        timestamp created_at
+    }
 
     raw_ocr ||--o{ extractions : "raw_ocr_id"
     extractions ||--o| confirmed_prescriptions : "extraction_id (unique)"
     confirmed_prescriptions ||--o{ observations : "prescription_id"
     User ||--o{ Document : "userId"
     Document ||--o{ Analysis : "documentId"
+    User ||--o{ patient_medications : "user_id"
+    patient_medications ||--o{ patient_medication_audit : "medication_id"
 ```
 
 ---
@@ -232,7 +286,9 @@ Managed by `frontend/lib/db.ts` and API endpoints.
 | `"Document"` | Uploaded prescription records: `id`, `userId`, `patientId`, `originalName`, `storedFilename` (stores public Supabase Storage CDN URL or local fallback path), `documentType` (`PRESCRIPTION`), `mimeType`, `filePath` (`/extractions/<id>`), `status` (`NOT CONFIRMED` \| `CONFIRMED` \| `DISCARDED`), `uploadedAt` |
 | `"Analysis"` | Structured analysis linked to document: `id`, `documentId`, `summary`, `structuredResult` (JSONB containing full extraction record and `image_url`), `isDemo`, `createdAt` |
 | `patient_onboarding` | Patient baseline health context: `id`, `user_id`, `patient_id`, `basic_info` (JSONB), `conditions` (JSONB), `custom_conditions` (JSONB), `history` (JSONB), `is_completed`, `created_at`, `updated_at` |
-| `patient_medications` | Recorded patient active & past medications: `id`, `patient_id`, `user_id`, `name`, `strength`, `status`, `indication`, `frequency`, `route`, `start_date`, `doctor`, `source`, `reliability`, `verification_status` |
+| `patient_medications` | Recorded patient medications with generalized lifecycle management: `id`, `patient_id`, `user_id`, `prescription_id`, `document_id`, `name`, `normalized_name`, `strength`, `status` (`ACTIVE` \| `COMPLETED` \| `ON_HOLD` \| `DISCONTINUED` \| `NEEDS_REVIEW`), `indication`, `frequency`, `route`, `prescription_date`, `uploaded_at`, `start_date`, `duration_raw`, `duration_days`, `expected_end_date`, `actual_end_date`, `discontinued_reason`, `status_reason`, `doctor`, `reference_id`, `reconciliation_category` (`NEW_COURSE` \| `POSSIBLE_CONTINUATION` \| `CHANGE_IN_STRENGTH_OR_INSTRUCTIONS` \| `OVERLAPPING_TREATMENT` \| `CONFLICTING_INSTRUCTIONS` \| `POTENTIAL_DUPLICATE` \| `INSUFFICIENT_INFORMATION`), `reconciliation_notes`, `is_conflicting`, `conflict_details`, `source`, `reliability`, `verification_status`, `created_at`, `updated_at` |
+| `patient_medication_audit` | Immutable clinical audit trail for medication lifecycle transitions: `id`, `medication_id`, `patient_id`, `user_id`, `action` (`STATUS_CHANGE` \| `RECONCILE_CONFIRM`), `previous_status`, `new_status`, `reason`, `actor` (`Patient` \| `Clinician`), `created_at` |
+| `patient_trend_cache` | Dual-tier hash cache for longitudinal statistical summaries and Gemini AI narrative outputs: `id`, `patient_id`, `cache_key`, `data_hash` (SHA-256 of deduplicated observation values), `payload` (JSONB cache entry), `expires_at`, `created_at` |
 | `patient_timeline` | Medical timeline events & symptoms: `id`, `patient_id`, `user_id`, `event_date`, `category`, `title`, `description`, `source`, `facility`, `is_conflicting`, `created_at` |
 
 > Row-Level Security (RLS) is enabled on all tables in Supabase. Policies grant full access via the service role. See `scratch/supabase_schema.sql` for the exact policy definitions.

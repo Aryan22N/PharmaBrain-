@@ -15,6 +15,8 @@ The documentation is organized into domain-specific module directories for enhan
 | [**`model/`**](model/README.md) | AI models, prompts & drug database | • [06_MEDICINE_KNOWLEDGE_BASE.md](model/06_MEDICINE_KNOWLEDGE_BASE.md)<br>• [07_EVALUATION.md](model/07_EVALUATION.md)<br>• [10_PROMPT_REGISTRY.md](model/10_PROMPT_REGISTRY.md) |
 | [**`pipeline/`**](pipeline/README.md) | Prescription extraction pipeline & timeline AI | • [03_PIPELINE_SPEC.md](pipeline/03_PIPELINE_SPEC.md)<br>• [15_MEDICAL_TIMELINE_AND_AI_ANALYSIS.md](pipeline/15_MEDICAL_TIMELINE_AND_AI_ANALYSIS.md) |
 | [**`api-data/`**](api-data/README.md) | Schemas, ORM & REST APIs | • [04_DATA_MODEL.md](api-data/04_DATA_MODEL.md)<br>• [05_API_SPEC.md](api-data/05_API_SPEC.md) |
+| [**`Medication-Lifecycle/`**](Medication-Lifecycle/README.md) | Generalized medication lifecycle engine, audit trail & prescription image inspection | • [README.md](Medication-Lifecycle/README.md)<br>• [IMPLEMENTATION_STATUS.md](Medication-Lifecycle/IMPLEMENTATION_STATUS.md) |
+| [**`Trend-Analysis/`**](Trend-Analysis/README.md) | Longitudinal trend analysis engine, 5-date gating & dual-tier cache | • [README.md](Trend-Analysis/README.md)<br>• [IMPLEMENTATION_STATUS.md](Trend-Analysis/IMPLEMENTATION_STATUS.md) |
 | [**`operations/`**](operations/README.md) | Operations, runbook & security | • [08_SECURITY_PRIVACY.md](operations/08_SECURITY_PRIVACY.md)<br>• [09_RUNBOOK.md](operations/09_RUNBOOK.md)<br>• [13_KNOWN_ISSUES.md](operations/13_KNOWN_ISSUES.md) |
 
 ---
@@ -47,6 +49,12 @@ docs/
 │   ├── README.md
 │   ├── 04_DATA_MODEL.md
 │   └── 05_API_SPEC.md
+├── Medication-Lifecycle/          # Generalized Medication Lifecycle & Audit Trail
+│   ├── README.md
+│   └── IMPLEMENTATION_STATUS.md
+├── Trend-Analysis/                # Longitudinal Trend Analysis & Caching
+│   ├── README.md
+│   └── IMPLEMENTATION_STATUS.md
 └── operations/                    # Runbook, Security, Privacy & Issues
     ├── README.md
     ├── 08_SECURITY_PRIVACY.md
