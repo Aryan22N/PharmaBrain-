@@ -18,6 +18,9 @@ __pycache__/
 *$py.class
 *.so
 
+# Scratch scripts and temporary files
+scratch/
+
 # Local SQLite databases & preprocessed images
 *.db
 *.sqlite

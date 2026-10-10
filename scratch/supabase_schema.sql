@@ -199,3 +199,59 @@ BEGIN
     END IF;
 END $$;
 
+-- 9. Patient Medications Table (Longitudinal Lifecycle Management)
+CREATE TABLE IF NOT EXISTS patient_medications (
+    id SERIAL PRIMARY KEY,
+    patient_id VARCHAR(64) NOT NULL,
+    user_id INTEGER,
+    prescription_id INTEGER,
+    document_id INTEGER,
+    name VARCHAR(160) NOT NULL,
+    normalized_name VARCHAR(160),
+    strength VARCHAR(64),
+    status VARCHAR(32) DEFAULT 'ACTIVE',
+    indication VARCHAR(160),
+    frequency VARCHAR(80),
+    route VARCHAR(40) DEFAULT 'Oral',
+    prescription_date VARCHAR(32),
+    uploaded_at VARCHAR(64),
+    start_date VARCHAR(32),
+    duration_raw VARCHAR(64),
+    duration_days INTEGER,
+    expected_end_date VARCHAR(32),
+    actual_end_date VARCHAR(32),
+    discontinued_reason TEXT,
+    status_reason TEXT,
+    doctor VARCHAR(160),
+    reference_id VARCHAR(80),
+    reconciliation_category VARCHAR(64) DEFAULT 'NEW_COURSE',
+    reconciliation_notes TEXT,
+    is_conflicting BOOLEAN DEFAULT false,
+    conflict_details TEXT,
+    source VARCHAR(64) DEFAULT 'Prescription Scan',
+    reliability VARCHAR(64) DEFAULT 'High',
+    verification_status VARCHAR(64) DEFAULT 'Prescription Verified',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_patient_medications_patient_id ON patient_medications(patient_id);
+CREATE INDEX IF NOT EXISTS idx_patient_medications_status ON patient_medications(status);
+CREATE INDEX IF NOT EXISTS idx_patient_medications_start_date ON patient_medications(start_date);
+CREATE INDEX IF NOT EXISTS idx_patient_medications_recon ON patient_medications(reconciliation_category);
+
+-- 10. Patient Medication Audit Table
+CREATE TABLE IF NOT EXISTS patient_medication_audit (
+    id SERIAL PRIMARY KEY,
+    medication_id INTEGER NOT NULL,
+    patient_id VARCHAR(64) NOT NULL,
+    user_id INTEGER,
+    action VARCHAR(64) NOT NULL,
+    previous_status VARCHAR(32),
+    new_status VARCHAR(32),
+    reason TEXT,
+    actor VARCHAR(120),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_patient_med_audit_med_id ON patient_medication_audit(medication_id);
+CREATE INDEX IF NOT EXISTS idx_patient_med_audit_patient ON patient_medication_audit(patient_id);
+
