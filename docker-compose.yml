@@ -42,6 +42,7 @@ services:
         condition: service_healthy
     environment:
       - NODE_ENV=production
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
       - PYTHON_API_URL=http://python-ocr:8000
       - PYTHON_API_TOKEN=${PYTHON_API_TOKEN:-rx_local_dev_token_2026_secure}
       - DATABASE_URL=${DATABASE_URL}

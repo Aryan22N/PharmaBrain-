@@ -90,10 +90,38 @@ export interface MetricTrendSummary {
   overallTrend: "improving" | "worsening" | "stable" | "fluctuating" | "insufficient_data";
   sustainedRiseWarning: boolean;
   activeAlerts: string[];
+
+  // Metric-specific data sufficiency
+  hasSufficientData: boolean;
+  insufficientDataReason?: string | null;
+}
+
+export interface EligiblePrescriptionItem {
+  id: number | string;
+  documentId?: number | string | null;
+  extractionId?: number | string | null;
+  date: string;
+  hospital?: string | null;
+  doctor?: string | null;
+  documentName?: string | null;
+  filePath?: string | null;
+  imageUrl?: string | null;
+}
+
+export interface PatientEligibilityInfo {
+  isEligible: boolean;
+  distinctDatesCount: number;
+  requiredCount: number;
+  distinctDates: string[];
+  eligiblePrescriptions: EligiblePrescriptionItem[];
+  progressPercentage: number;
+  message: string;
 }
 
 export interface PatientLongitudinalTrends {
   patientId: string;
+  isEligible: boolean;
+  eligibility: PatientEligibilityInfo;
   totalEncounters: number;
   dateRange: {
     start: string | null;
@@ -111,7 +139,8 @@ export interface PatientLongitudinalTrends {
   clinicalSummary: {
     hypertensionStatus: string;
     glycemicStatus: string;
-    overallRiskTier: "Low / Well-Managed" | "Moderate / Needs Monitoring" | "High / Clinical Review Recommended";
+    overallRiskTier: "Low / Well-Managed" | "Moderate / Needs Monitoring" | "High / Clinical Review Recommended" | "Insufficient Longitudinal History";
+    longitudinalConclusion?: string | null;
   };
 }
 
@@ -414,6 +443,8 @@ function buildMetricSummary(
       overallTrend: "insufficient_data",
       sustainedRiseWarning: false,
       activeAlerts: [],
+      hasSufficientData: false,
+      insufficientDataReason: `No ${metricLabel.toLowerCase()} readings recorded.`,
     };
   }
 
@@ -528,7 +559,6 @@ function buildMetricSummary(
   // Trajectory analysis & sustained rise detection
   let sustainedRiseWarning = false;
   if (metricKey === "bp" && dataPoints.length >= 3) {
-    // Check if last 2 consecutive encounters showed systolic rise >= 10 mmHg total
     const last3 = dataPoints.slice(-3);
     const rise1 = (last3[1].systolic || 0) - (last3[0].systolic || 0);
     const rise2 = (last3[2].systolic || 0) - (last3[1].systolic || 0);
@@ -577,9 +607,16 @@ function buildMetricSummary(
     }
   }
 
-  // Determine overall trajectory
+  // Determine overall trajectory & data sufficiency
+  const hasSufficientData = dataPoints.length >= 2;
+  const insufficientDataReason = !hasSufficientData
+    ? dataPoints.length === 1
+      ? "Single clinical reading recorded. At least 2 clinical visits are required to determine rate of change and trajectory."
+      : `No ${metricLabel.toLowerCase()} readings recorded.`
+    : null;
+
   let overallTrend: "improving" | "worsening" | "stable" | "fluctuating" | "insufficient_data" = "insufficient_data";
-  if (dataPoints.length >= 2) {
+  if (hasSufficientData) {
     if (metricKey === "bp") {
       const delta = (latest?.systolic || 0) - (baseline?.systolic || 0);
       if (Math.abs(delta) <= 4) overallTrend = "stable";
@@ -614,6 +651,8 @@ function buildMetricSummary(
     overallTrend,
     sustainedRiseWarning,
     activeAlerts: alerts,
+    hasSufficientData,
+    insufficientDataReason,
   };
 }
 
@@ -624,8 +663,20 @@ function buildMetricSummary(
 export function calculatePatientTrends(
   patientId: string,
   rawObservations: any[],
-  documents: any[] = []
+  documents: any[] = [],
+  eligibility?: PatientEligibilityInfo
 ): PatientLongitudinalTrends {
+  const isEligible = eligibility ? eligibility.isEligible : false;
+  const safeEligibility: PatientEligibilityInfo = eligibility || {
+    isEligible: false,
+    distinctDatesCount: 0,
+    requiredCount: 5,
+    distinctDates: [],
+    eligiblePrescriptions: [],
+    progressPercentage: 0,
+    message: "At least 5 confirmed prescriptions across distinct clinical dates are required for longitudinal analysis.",
+  };
+
   // Build lookup map for documents by prescription/extraction ID
   const docLookup = new Map<number | string, any>();
   for (const doc of documents) {
@@ -656,6 +707,17 @@ export function calculatePatientTrends(
   const spo2Summary = buildMetricSummary("spo2", "Oxygen Saturation", "%", spo2Obs, docLookup);
   const weightSummary = buildMetricSummary("weight", "Body Weight", "kg", weightObs, docLookup);
 
+  // If patient has < 5 confirmed distinct prescription dates, suppress longitudinal trajectory conclusions
+  if (!isEligible) {
+    bpSummary.overallTrend = "insufficient_data";
+    bpSummary.sustainedRiseWarning = false;
+    glucoseSummary.overallTrend = "insufficient_data";
+    hba1cSummary.overallTrend = "insufficient_data";
+    pulseSummary.overallTrend = "insufficient_data";
+    spo2Summary.overallTrend = "insufficient_data";
+    weightSummary.overallTrend = "insufficient_data";
+  }
+
   // Aggregate all unique dates and alerts
   const allDates = rawObservations
     .map(o => (o.obs_date || o.date || "").toString().slice(0, 10))
@@ -670,24 +732,30 @@ export function calculatePatientTrends(
     ...spo2Summary.activeAlerts,
   ];
 
-  // Overall risk tier determination
-  let overallRiskTier: "Low / Well-Managed" | "Moderate / Needs Monitoring" | "High / Clinical Review Recommended" = "Low / Well-Managed";
-  if (
-    bpSummary.latest?.riskLevel === "critical" ||
-    glucoseSummary.latest?.riskLevel === "critical" ||
-    hba1cSummary.latest?.riskLevel === "critical" ||
-    spo2Summary.latest?.riskLevel === "critical" ||
-    bpSummary.sustainedRiseWarning ||
-    bpSummary.latest?.stage === "Stage 2 Hypertension"
-  ) {
-    overallRiskTier = "High / Clinical Review Recommended";
-  } else if (
-    bpSummary.latest?.riskLevel === "borderline" ||
-    glucoseSummary.latest?.riskLevel === "borderline" ||
-    hba1cSummary.latest?.riskLevel === "borderline" ||
-    pulseSummary.latest?.riskLevel === "borderline"
-  ) {
-    overallRiskTier = "Moderate / Needs Monitoring";
+  // Overall risk tier determination (Only active when isEligible is true)
+  let overallRiskTier: "Low / Well-Managed" | "Moderate / Needs Monitoring" | "High / Clinical Review Recommended" | "Insufficient Longitudinal History" = "Insufficient Longitudinal History";
+  let longitudinalConclusion: string | null = null;
+
+  if (isEligible) {
+    overallRiskTier = "Low / Well-Managed";
+    if (
+      bpSummary.latest?.riskLevel === "critical" ||
+      glucoseSummary.latest?.riskLevel === "critical" ||
+      hba1cSummary.latest?.riskLevel === "critical" ||
+      spo2Summary.latest?.riskLevel === "critical" ||
+      bpSummary.sustainedRiseWarning ||
+      bpSummary.latest?.stage === "Stage 2 Hypertension"
+    ) {
+      overallRiskTier = "High / Clinical Review Recommended";
+    } else if (
+      bpSummary.latest?.riskLevel === "borderline" ||
+      glucoseSummary.latest?.riskLevel === "borderline" ||
+      hba1cSummary.latest?.riskLevel === "borderline" ||
+      pulseSummary.latest?.riskLevel === "borderline"
+    ) {
+      overallRiskTier = "Moderate / Needs Monitoring";
+    }
+    longitudinalConclusion = `Evaluated across ${safeEligibility.distinctDatesCount} eligible clinical encounters.`;
   }
 
   const hypertensionStatus = bpSummary.latest 
@@ -702,6 +770,8 @@ export function calculatePatientTrends(
 
   return {
     patientId,
+    isEligible,
+    eligibility: safeEligibility,
     totalEncounters: new Set(allDates).size,
     dateRange: {
       start: allDates[0] || null,
@@ -720,6 +790,7 @@ export function calculatePatientTrends(
       hypertensionStatus,
       glycemicStatus,
       overallRiskTier,
+      longitudinalConclusion,
     },
   };
 }
