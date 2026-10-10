@@ -109,6 +109,7 @@ npm run dev
 | [docs/model/07_EVALUATION.md](docs/model/07_EVALUATION.md) | `model/` | Metrics and test results |
 | [docs/model/10_PROMPT_REGISTRY.md](docs/model/10_PROMPT_REGISTRY.md) | `model/` | All LLM prompts as versioned registry |
 | [docs/pipeline/03_PIPELINE_SPEC.md](docs/pipeline/03_PIPELINE_SPEC.md) | `pipeline/` | Every pipeline stage in detail |
+| [docs/pipeline/15_MEDICAL_TIMELINE_AND_AI_ANALYSIS.md](docs/pipeline/15_MEDICAL_TIMELINE_AND_AI_ANALYSIS.md) | `pipeline/` | Medical timeline architecture, tables & Gemini AI summary engine |
 | [docs/api-data/04_DATA_MODEL.md](docs/api-data/04_DATA_MODEL.md) | `api-data/` | All database tables and schemas |
 | [docs/api-data/05_API_SPEC.md](docs/api-data/05_API_SPEC.md) | `api-data/` | Every API endpoint with curl examples |
 | [docs/operations/08_SECURITY_PRIVACY.md](docs/operations/08_SECURITY_PRIVACY.md) | `operations/` | Data classification, PII, compliance |
