@@ -136,35 +136,136 @@ export async function POST(
         console.warn("Could not auto-add to timeline_events:", tlErr);
       }
 
-      // Automatically track each medicine to Recorded Medicines
+      // Automatically track each medicine to Recorded Medicines with Generalized Reconciliation
       if (Array.isArray(rec.medicines)) {
+        const {
+          normalizeMedicineName,
+          parsePrescribedDuration,
+          calculateExpectedEndDate,
+          reconcileMedication,
+        } = await import("@/lib/medicationLifecycle");
+
+        // Fetch existing courses for this patient to run generalized reconciliation
+        const effPatientId = patientId || "483027156";
+        let existingCourses: any[] = [];
+        try {
+          const rawExisting = await query(
+            `SELECT * FROM patient_medications WHERE patient_id = $1 OR user_id = $2;`,
+            [effPatientId, userId]
+          );
+          existingCourses = rawExisting.map((r: any) => ({
+            id: r.id,
+            patientId: r.patient_id,
+            prescriptionId: r.prescription_id,
+            documentId: r.document_id,
+            name: r.name,
+            normalizedName: r.normalized_name || normalizeMedicineName(r.name),
+            strength: r.strength || "",
+            status: r.status,
+            frequency: r.frequency || "",
+            route: r.route || "Oral",
+            startDate: r.start_date,
+            prescriptionDate: r.prescription_date,
+            durationRaw: r.duration_raw,
+            durationDays: r.duration_days,
+            expectedEndDate: r.expected_end_date,
+            actualEndDate: r.actual_end_date,
+            doctor: r.doctor,
+            referenceId: r.reference_id,
+            isConflicting: Boolean(r.is_conflicting),
+            conflictDetails: r.conflict_details,
+          }));
+        } catch (fetchErr) {
+          console.warn("Could not query existing medications for reconciliation:", fetchErr);
+        }
+
         for (const med of rec.medicines) {
-          const medName = med.name || "Prescribed Medicine";
+          if (!med || !med.name) continue;
+          const medName = String(med.name).trim();
+          const normName = normalizeMedicineName(medName);
           const medStrength = med.strength || med.dose || "";
-          const medFreq = med.frequency || "Once daily";
+          const medFreq = med.frequency || med.instructions || "Once daily";
           const medRoute = med.route || "Oral";
-          const indication = rec.diagnosis || "Therapeutic management";
+          const durationRaw = med.duration || null;
+          const durationDays = parsePrescribedDuration(durationRaw);
+          const expectedEndDate = calculateExpectedEndDate(eventDate, durationDays);
+          const indication = rec.diagnosis || med.indication || null;
+
+          // Check if already confirmed (idempotency check by reference_id & med name)
+          const alreadyExists = existingCourses.some(
+            (c: any) =>
+              c.referenceId === refId &&
+              (c.normalizedName === normName || normalizeMedicineName(c.name) === normName)
+          );
+          if (alreadyExists) continue;
+
+          // Generalized reconciliation against patient's existing courses
+          const recon = reconcileMedication(
+            {
+              name: medName,
+              strength: medStrength,
+              frequency: medFreq,
+              route: medRoute,
+              durationRaw,
+              startDate: eventDate,
+              prescriptionDate: eventDate,
+              doctor: docNameStr,
+              hospital: hospNameStr,
+              referenceId: refId,
+              indication,
+            },
+            existingCourses
+          );
+
+          if (recon.reconciliationCategory === "POTENTIAL_DUPLICATE") {
+            continue;
+          }
 
           try {
-            await query(
+            const insRes = await query(
               `INSERT INTO patient_medications (
-                patient_id, user_id, name, strength, status, indication,
-                frequency, route, start_date, doctor, reference_id,
-                is_conflicting, conflict_details, source, reliability, verification_status
-              ) VALUES ($1, $2, $3, $4, 'ACTIVE', $5, $6, $7, $8, $9, $10, false, null, 'Hospital HMS', 'High', 'Hospital Verified');`,
+                patient_id, user_id, name, normalized_name, strength, status, indication,
+                frequency, route, prescription_date, uploaded_at, start_date, duration_raw,
+                duration_days, expected_end_date, actual_end_date, discontinued_reason, doctor,
+                reference_id, reconciliation_category, reconciliation_notes, is_conflicting,
+                conflict_details, source, reliability, verification_status
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NULL, NULL, $16, $17, $18, $19, $20, $21, 'Prescription Scan', 'High', 'Prescription Verified')
+              RETURNING id;`,
               [
-                patientId || "483027156",
+                effPatientId,
                 userId,
                 medName,
+                normName,
                 medStrength,
+                recon.assignedStatus,
                 indication,
                 medFreq,
                 medRoute,
                 eventDate,
+                new Date().toISOString().split("T")[0],
+                eventDate,
+                durationRaw,
+                durationDays,
+                expectedEndDate,
                 docNameStr,
                 refId,
+                recon.reconciliationCategory,
+                recon.reconciliationNotes,
+                recon.isConflicting,
+                recon.conflictDetails,
               ]
             );
+
+            if (insRes.length > 0) {
+              const newMedId = insRes[0].id;
+              // Log audit trail
+              await query(
+                `INSERT INTO patient_medication_audit (
+                  medication_id, patient_id, user_id, action, previous_status, new_status, reason, actor
+                ) VALUES ($1, $2, $3, 'CREATED', NULL, $4, $5, 'Prescription Confirmation Pipeline');`,
+                [newMedId, effPatientId, userId, recon.assignedStatus, recon.reconciliationNotes]
+              );
+            }
           } catch (medErr) {
             console.warn("Could not auto-add to patient_medications:", medErr);
           }
