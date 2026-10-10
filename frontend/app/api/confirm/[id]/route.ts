@@ -167,6 +167,64 @@ export async function POST(
           }
         }
       }
+
+      // Automatically mirror confirmed vitals to PostgreSQL observations table
+      if (Array.isArray(rec.vitals)) {
+        for (const v of rec.vitals) {
+          if (!v || typeof v !== 'object') continue;
+          const parsed = v.parsed || {};
+          let kind = v.kind;
+          const vName = (v.name || '').toLowerCase();
+          if (!kind) {
+            if (vName.includes('bp') || vName.includes('blood pressure')) kind = 'bp';
+            else if (vName.includes('pulse') || vName.includes('pr') || vName.includes('hr')) kind = 'pulse';
+            else if (vName.includes('spo2') || vName.includes('o2')) kind = 'spo2';
+            else if (vName.includes('temp')) kind = 'temp';
+            else if (vName.includes('hba1c') || vName.includes('a1c')) kind = 'hba1c';
+            else if (vName.includes('fbs') || vName.includes('fasting')) kind = 'sugar_fasting';
+            else if (vName.includes('sugar') || vName.includes('rbs') || vName.includes('glucose')) kind = 'sugar_random';
+            else if (vName.includes('weight') || vName.includes('wt')) kind = 'weight';
+            else continue;
+          }
+
+          let sys = parsed.systolic ?? null;
+          let dia = parsed.diastolic ?? null;
+          let val = parsed.value ?? null;
+          const uStr = parsed.unit ?? (kind === 'bp' ? 'mmHg' : '');
+
+          if (kind === 'bp' && (sys === null || dia === null)) {
+            const m = String(v.value || '').match(/(\d{2,3})\s*\/\s*(\d{2,3})/);
+            if (m) {
+              sys = Number(m[1]);
+              dia = Number(m[2]);
+            }
+          } else if (val === null && v.value) {
+            const mVal = String(v.value).match(/(\d+(?:\.\d+)?)/);
+            if (mVal) val = Number(mVal[1]);
+          }
+
+          try {
+            await query(
+              `INSERT INTO observations (patient_id, prescription_id, obs_date, kind, systolic, diastolic, value, unit, raw_text, created_at)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);`,
+              [
+                patientId || "483027156",
+                Number(id) || null,
+                eventDate,
+                kind,
+                sys,
+                dia,
+                val,
+                uStr,
+                `${v.name || ''} ${v.value || ''}`.slice(0, 120),
+                new Date().toISOString()
+              ]
+            );
+          } catch (obsErr) {
+            console.warn("Could not mirror vital to observations table:", obsErr);
+          }
+        }
+      }
     } catch (dbErr) {
       console.warn("Could not update/mirror confirmed prescription to Document table:", dbErr);
     }
