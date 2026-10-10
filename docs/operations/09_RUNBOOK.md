@@ -19,6 +19,13 @@ Owner: TBD
 | `PYTHON_API_URL` | Docker frontend | URL to reach Python service | `http://python-ocr:8000` (Docker) or `http://localhost:8000` (local) | No (default `http://localhost:8000`) |
 | `FRONTEND_ORIGIN` | Python backend | CORS allowed origin | `http://localhost:3000` | No (default `*`) |
 | `JWT_SECRET` | Frontend | JWT signing secret | Any strong random string ≥ 32 chars | No (insecure fallback exists — do NOT use in production) |
+| `NEXT_PUBLIC_SUPABASE_URL` | Frontend | Supabase project URL | `https://[REF].supabase.co` | **Yes** |
+| `SUPABASE_URL` | Frontend | Supabase project URL | `https://[REF].supabase.co` | **Yes** |
+| `SUPABASE_STORAGE_BUCKET` | Frontend | Supabase Storage bucket for prescription scans | `OCR_Images` | No (default `OCR_Images`) |
+| `SUPABASE_STORAGE_FOLDER` | Frontend | Storage subfolder within bucket | `uploads` | No (default `uploads`) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Frontend | Supabase public anonymous API key | `sb_publishable_...` | **Yes** |
+| `SUPABASE_ANON_KEY` | Frontend | Supabase anonymous API key | `sb_publishable_...` | **Yes** |
+| `SUPABASE_SERVICE_ROLE_KEY` | Frontend | Supabase service role secret for bucket uploads | `sb_secret_...` | **Yes** |
 | `OCR_ENGINE_TYPE` | Python backend | OCR backend selector | `PaddleOCR` or `PaddleOCR-VL` | No (default `PaddleOCR`) |
 | `PADDLEOCR_LANG` | Python backend | PaddleOCR language | `en` | No (default `en`) |
 | `PADDLEOCR_DEVICE` | Docker | Compute device | `cpu` | No (default `cpu`) |
@@ -157,6 +164,7 @@ python model/import_medicines_bulk.py
 | `409 looks like a duplicate` | Same patient + date + medicines already confirmed | Send `allow_duplicate: true` in confirm request if intentional |
 | `Invalid or missing X-API-Key` | `API_TOKEN` mismatch between frontend and backend | Ensure `PYTHON_API_TOKEN` in frontend env matches `API_TOKEN` in Python env |
 | `Invalid DATABASE_URL configuration` | Special characters in Supabase password not encoded | `sanitize_database_url()` handles this automatically — check password contains no structural issues |
+| Prescription image shows sample placeholder (`/sample_prescription.png`) | Supabase Storage bucket `OCR_Images` set to `public: false`, missing container env keys, or `/uploads/` prefix issue | Verify `public: true` on `OCR_Images` bucket in Supabase; check `SUPABASE_SERVICE_ROLE_KEY` in `docker-compose.yml`; check `/api/user/dashboard` response |
 
 ---
 

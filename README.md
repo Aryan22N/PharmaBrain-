@@ -20,6 +20,7 @@ A clinical prescription intelligence system that converts a photo of a medical p
 | Prescription confirmation + audit log | **Working** |
 | Vitals time-series (BP, sugar, pulse, weight) | **Working** |
 | Patient dashboard / timeline | **Working** |
+| Prescription image cloud storage (Supabase Bucket `OCR_Images`) | **Working** |
 | Docker multi-container deployment | **Working** |
 | GPU acceleration | **PLANNED** |
 | PDF / multi-page support | **PLANNED** |
@@ -35,13 +36,13 @@ A clinical prescription intelligence system that converts a photo of a medical p
 - Node.js 20+  
 - Docker + Docker Compose (for containerised run)  
 - A Google Gemini API key  
-- A Supabase PostgreSQL connection string (or use SQLite for local dev)
+- A Supabase project (PostgreSQL + Cloud Storage bucket `OCR_Images`)
 
 ### Option A — Docker (recommended)
 
 ```powershell
 # 1. Copy and fill environment variables
-copy .env.example .env   # fill GEMINI_API_KEY and DATABASE_URL
+copy .env.example .env   # fill GEMINI_API_KEY, DATABASE_URL, and Supabase keys
 
 # 2. Build and start both services
 docker-compose up --build
@@ -73,6 +74,12 @@ npm run dev
 | `FRONTEND_ORIGIN` | `model/.env` | No (default `*`) |
 | `JWT_SECRET` | `frontend/.env.local` | No (default fallback exists but insecure for production) |
 | `PYTHON_API_URL` | Docker compose env | No (default `http://python-ocr:8000`) |
+| `NEXT_PUBLIC_SUPABASE_URL` | `frontend/.env.local` or root `.env` | Yes (for Supabase Storage) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `frontend/.env.local` or root `.env` | Yes (for Supabase Storage) |
+| `SUPABASE_SERVICE_ROLE_KEY` | `frontend/.env.local` or root `.env` | Optional (recommended for backend storage bypass) |
+| `SUPABASE_STORAGE_BUCKET` | `frontend/.env.local` or root `.env` | No (default `OCR_Images`) |
+| `SUPABASE_STORAGE_FOLDER` | `frontend/.env.local` or root `.env` | No (default `uploads`) |
+
 
 ---
 
@@ -102,6 +109,7 @@ npm run dev
 | [docs/model/07_EVALUATION.md](docs/model/07_EVALUATION.md) | `model/` | Metrics and test results |
 | [docs/model/10_PROMPT_REGISTRY.md](docs/model/10_PROMPT_REGISTRY.md) | `model/` | All LLM prompts as versioned registry |
 | [docs/pipeline/03_PIPELINE_SPEC.md](docs/pipeline/03_PIPELINE_SPEC.md) | `pipeline/` | Every pipeline stage in detail |
+| [docs/pipeline/15_MEDICAL_TIMELINE_AND_AI_ANALYSIS.md](docs/pipeline/15_MEDICAL_TIMELINE_AND_AI_ANALYSIS.md) | `pipeline/` | Medical timeline architecture, tables & Gemini AI summary engine |
 | [docs/api-data/04_DATA_MODEL.md](docs/api-data/04_DATA_MODEL.md) | `api-data/` | All database tables and schemas |
 | [docs/api-data/05_API_SPEC.md](docs/api-data/05_API_SPEC.md) | `api-data/` | Every API endpoint with curl examples |
 | [docs/operations/08_SECURITY_PRIVACY.md](docs/operations/08_SECURITY_PRIVACY.md) | `operations/` | Data classification, PII, compliance |

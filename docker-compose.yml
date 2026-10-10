@@ -42,10 +42,18 @@ services:
         condition: service_healthy
     environment:
       - NODE_ENV=production
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
       - PYTHON_API_URL=http://python-ocr:8000
       - PYTHON_API_TOKEN=${PYTHON_API_TOKEN:-rx_local_dev_token_2026_secure}
       - DATABASE_URL=${DATABASE_URL}
       - NODE_TLS_REJECT_UNAUTHORIZED=0
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL:-https://dvydfsahkqzgluusdsnn.supabase.co}
+      - SUPABASE_URL=${SUPABASE_URL:-https://dvydfsahkqzgluusdsnn.supabase.co}
+      - SUPABASE_STORAGE_BUCKET=${SUPABASE_STORAGE_BUCKET:-OCR_Images}
+      - SUPABASE_STORAGE_FOLDER=${SUPABASE_STORAGE_FOLDER:-uploads}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
 
 volumes:
   paddlex-cache:

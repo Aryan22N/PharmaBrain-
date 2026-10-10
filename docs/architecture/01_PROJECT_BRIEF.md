@@ -77,5 +77,5 @@ Measurable targets linked to evaluation methodology in [docs/model/07_EVALUATION
 ## Open Questions
 
 - Which licensed Indian medicine dataset (CDSCO / Jan Aushadhi / NLEM) will be used for production? `Unknown`
-- Where will prescription images be stored long-term — local disk or cloud object storage? `Unknown`
+- Where will prescription images be stored long-term? Resolved — Supabase Storage Cloud Bucket (`OCR_Images/uploads/`) with public CDN URLs and containerized disk fallback.
 - Is there a specific legal or regulatory certification required for clinical deployment in this hospital? `Unknown`

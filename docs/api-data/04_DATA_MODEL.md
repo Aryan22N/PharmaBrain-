@@ -229,8 +229,8 @@ Managed by `frontend/lib/db.ts` and API endpoints.
 | Table | Purpose |
 |---|---|
 | `"User"` | Patient accounts: `id`, `patientId` (9-digit), `legacyPatientId`, `name`, `email`, `passwordHash`, `createdAt` |
-| `"Document"` | Uploaded prescription images: `id`, `userId`, `patientId`, `originalName`, `storedFilename`, `documentType`, `mimeType`, `filePath`, `status`, `uploadedAt` |
-| `"Analysis"` | Legacy analysis storage (currently minimally used): `id`, `documentId`, `summary`, `structuredResult` (JSONB), `isDemo`, `createdAt` |
+| `"Document"` | Uploaded prescription records: `id`, `userId`, `patientId`, `originalName`, `storedFilename` (stores public Supabase Storage CDN URL or local fallback path), `documentType` (`PRESCRIPTION`), `mimeType`, `filePath` (`/extractions/<id>`), `status` (`NOT CONFIRMED` \| `CONFIRMED` \| `DISCARDED`), `uploadedAt` |
+| `"Analysis"` | Structured analysis linked to document: `id`, `documentId`, `summary`, `structuredResult` (JSONB containing full extraction record and `image_url`), `isDemo`, `createdAt` |
 | `patient_onboarding` | Patient baseline health context: `id`, `user_id`, `patient_id`, `basic_info` (JSONB), `conditions` (JSONB), `custom_conditions` (JSONB), `history` (JSONB), `is_completed`, `created_at`, `updated_at` |
 | `patient_medications` | Recorded patient active & past medications: `id`, `patient_id`, `user_id`, `name`, `strength`, `status`, `indication`, `frequency`, `route`, `start_date`, `doctor`, `source`, `reliability`, `verification_status` |
 | `patient_timeline` | Medical timeline events & symptoms: `id`, `patient_id`, `user_id`, `event_date`, `category`, `title`, `description`, `source`, `facility`, `is_conflicting`, `created_at` |

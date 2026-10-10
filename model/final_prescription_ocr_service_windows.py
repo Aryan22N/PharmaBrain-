@@ -641,6 +641,25 @@ class Prescription(BaseModel):
     follow_up: Val = Field(default_factory=Val)
 
 
+class TrendsSummaryResponse(BaseModel):
+    narrative: str
+    keyHighlights: List[str] = Field(default_factory=list)
+    questionsForDoctor: List[str] = Field(default_factory=list)
+    safetyDisclaimer: str = "Informational health analysis only. All clinical treatment decisions, drug dosages, and diagnosis must be confirmed directly with your licensed physician."
+
+
+TRENDS_SUMMARY_SYSTEM_PROMPT = """You are an empathetic, clinical-intelligence communication specialist.
+Your goal is to provide a patient-facing longitudinal health review based strictly on deterministic clinical guidelines and observed biomarker trajectories.
+
+RULES:
+1. Empathy & Clarity: Write in simple, reassuring, plain English suitable for patients without medical backgrounds.
+2. Non-diagnostic phrasing: All statements are observational and informational drafts. Never declare a definitive diagnosis or prescribe medication dosage changes.
+3. Positivity & Milestones: Explicitly acknowledge positive trajectories (e.g. lowering BP towards target, stable oxygen saturation).
+4. Actionable Doctor Questions: Provide exactly 3 high-yield questions the patient can ask their doctor during their next visit.
+5. Strict JSON output: Return ONLY a valid JSON object matching the requested schema.
+"""
+
+
 SYSTEM_PROMPT = """You are an expert clinical prescription interpretation and structuring assistant with advanced multimodal vision capabilities.
 Input consists of:
 1. The raw prescription image (when provided).
@@ -1612,6 +1631,52 @@ def api_patient_obs(patient_id: str, kind: Optional[str] = None):
     with engine.connect() as c:
         rows = c.execute(q.order_by(observations.c.obs_date, observations.c.id)).mappings().all()
     return [dict(r) for r in rows]
+
+
+@app.post("/patients/{patient_id}/trends_summary", dependencies=[Depends(require_key)])
+def api_patient_trends_summary(patient_id: str, body: dict):
+    t0 = time.time()
+    log_stage("TRENDS_SUMMARY", f"Generating longitudinal trends AI narrative for patient {patient_id}")
+    trends_payload = body.get("trends") or {}
+    patient_name = body.get("patient_name") or "Patient"
+
+    prompt_text = f"PATIENT: {patient_name}\nCLINICAL TRENDS DATA:\n{json.dumps(trends_payload, indent=2)}"
+
+    for model_name in MODEL_CANDIDATES:
+        try:
+            cfg = types.GenerateContentConfig(
+                system_instruction=TRENDS_SUMMARY_SYSTEM_PROMPT,
+                response_mime_type="application/json",
+                response_schema=TrendsSummaryResponse,
+            )
+            resp = client.models.generate_content(
+                model=model_name,
+                contents=[prompt_text],
+                config=cfg,
+            )
+            parsed = json.loads(resp.text)
+            log_stage("TRENDS_SUMMARY", f"Successfully generated trends narrative via {model_name}", time.time() - t0)
+            return parsed
+        except Exception as e:
+            err_msg = str(e)
+            log_stage("TRENDS_WARN", f"Model {model_name} failed: {err_msg[:120]}")
+            if any(code in err_msg for code in ("503", "UNAVAILABLE", "429", "404", "NOT_FOUND")):
+                continue
+            continue
+
+    # Deterministic fallback response when LLM is unavailable
+    log_stage("TRENDS_FALLBACK", "Returning deterministic safety fallback summary", time.time() - t0)
+    return dict(
+        narrative=f"Longitudinal analysis for {patient_name} indicates tracked physiological readings across visits. Review current cardiovascular and glycemic trends with your physician.",
+        keyHighlights=["Biomarker readings monitored longitudinally", "Consistent clinical tracking across prescription encounters"],
+        questionsForDoctor=[
+            "How do my recent vitals trajectories align with my overall health targets?",
+            "Are there recommended lifestyle or nutrition modifications based on my latest trends?",
+            "When should we schedule my next biomarker check?"
+        ],
+        safetyDisclaimer="Informational health analysis only. All clinical treatment decisions, drug dosages, and diagnosis must be confirmed directly with your licensed physician."
+    )
+
 
 """## 9. Start the local API
 Run this file from the VS Code terminal. The API is available only on this computer by default.

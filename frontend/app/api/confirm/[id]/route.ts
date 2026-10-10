@@ -70,17 +70,20 @@ export async function POST(
 
       if (existingDocs.length > 0) {
         const docId = existingDocs[0].id;
-        const prevResult = existingDocs[0].structuredResult || {};
-        if (!rec.image_url && prevResult.image_url) {
+        let prevResult = existingDocs[0].structuredResult || {};
+        if (typeof prevResult === "string") {
+          try { prevResult = JSON.parse(prevResult); } catch (_) { prevResult = {}; }
+        }
+        if (!rec.image_url && prevResult.image_url && prevResult.image_url !== "/sample_prescription.png") {
           rec.image_url = prevResult.image_url;
-        } else if (!rec.image_url && (existingDocs[0].storedFilename?.startsWith("/uploads/") || existingDocs[0].storedFilename?.startsWith("http://") || existingDocs[0].storedFilename?.startsWith("https://"))) {
+        } else if (!rec.image_url && existingDocs[0].storedFilename && existingDocs[0].storedFilename !== "/sample_prescription.png" && (existingDocs[0].storedFilename.startsWith("/uploads/") || existingDocs[0].storedFilename.startsWith("http://") || existingDocs[0].storedFilename.startsWith("https://"))) {
           rec.image_url = existingDocs[0].storedFilename;
         }
         await query(
           `UPDATE "Document" 
-           SET status = 'CONFIRMED', "originalName" = $1 
-           WHERE id = $2;`,
-          [docName, docId]
+           SET status = 'CONFIRMED', "originalName" = $1, "storedFilename" = COALESCE($2, "storedFilename")
+           WHERE id = $3;`,
+          [docName, rec.image_url || existingDocs[0].storedFilename, docId]
         );
         await query(
           `UPDATE "Analysis" 
@@ -164,6 +167,64 @@ export async function POST(
             );
           } catch (medErr) {
             console.warn("Could not auto-add to patient_medications:", medErr);
+          }
+        }
+      }
+
+      // Automatically mirror confirmed vitals to PostgreSQL observations table
+      if (Array.isArray(rec.vitals)) {
+        for (const v of rec.vitals) {
+          if (!v || typeof v !== 'object') continue;
+          const parsed = v.parsed || {};
+          let kind = v.kind;
+          const vName = (v.name || '').toLowerCase();
+          if (!kind) {
+            if (vName.includes('bp') || vName.includes('blood pressure')) kind = 'bp';
+            else if (vName.includes('pulse') || vName.includes('pr') || vName.includes('hr')) kind = 'pulse';
+            else if (vName.includes('spo2') || vName.includes('o2')) kind = 'spo2';
+            else if (vName.includes('temp')) kind = 'temp';
+            else if (vName.includes('hba1c') || vName.includes('a1c')) kind = 'hba1c';
+            else if (vName.includes('fbs') || vName.includes('fasting')) kind = 'sugar_fasting';
+            else if (vName.includes('sugar') || vName.includes('rbs') || vName.includes('glucose')) kind = 'sugar_random';
+            else if (vName.includes('weight') || vName.includes('wt')) kind = 'weight';
+            else continue;
+          }
+
+          let sys = parsed.systolic ?? null;
+          let dia = parsed.diastolic ?? null;
+          let val = parsed.value ?? null;
+          const uStr = parsed.unit ?? (kind === 'bp' ? 'mmHg' : '');
+
+          if (kind === 'bp' && (sys === null || dia === null)) {
+            const m = String(v.value || '').match(/(\d{2,3})\s*\/\s*(\d{2,3})/);
+            if (m) {
+              sys = Number(m[1]);
+              dia = Number(m[2]);
+            }
+          } else if (val === null && v.value) {
+            const mVal = String(v.value).match(/(\d+(?:\.\d+)?)/);
+            if (mVal) val = Number(mVal[1]);
+          }
+
+          try {
+            await query(
+              `INSERT INTO observations (patient_id, prescription_id, obs_date, kind, systolic, diastolic, value, unit, raw_text, created_at)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);`,
+              [
+                patientId || "483027156",
+                Number(id) || null,
+                eventDate,
+                kind,
+                sys,
+                dia,
+                val,
+                uStr,
+                `${v.name || ''} ${v.value || ''}`.slice(0, 120),
+                new Date().toISOString()
+              ]
+            );
+          } catch (obsErr) {
+            console.warn("Could not mirror vital to observations table:", obsErr);
           }
         }
       }
