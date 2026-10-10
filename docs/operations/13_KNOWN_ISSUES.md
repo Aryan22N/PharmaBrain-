@@ -100,11 +100,24 @@ Owner: TBD
 
 ---
 
-### [KI-12] Prescription images stored unencrypted on local disk — ✅ RESOLVED
+### [KI-12] Prescription images stored unencrypted on local disk & placeholder fallback bug — ✅ RESOLVED
 
-**Evidence:** Local `frontend/public/uploads/` plain file storage replaced with Supabase Storage Cloud Bucket (`OCR_Images/uploads/`) with public CDN URLs and encrypted transit.  
-**Impact:** Images are now stored in scalable cloud object storage rather than unencrypted local disk directories.  
-**Fix:** Implemented `frontend/lib/supabaseStorage.ts` helper and migrated all files to Supabase Storage Bucket `OCR_Images`.
+**Evidence:**
+- Previously, prescription uploads stored files in local `frontend/public/uploads/` plain file directory.
+- Migrated to Supabase Storage Cloud Bucket (`OCR_Images/uploads/`).
+- On 2026-10-10, identified and resolved a subsequent runtime bug where prescription uploads were defaulting to `/sample_prescription.png` because:
+  1. The Supabase Storage bucket `OCR_Images` was initialized with `public: false`, blocking browser rendering without auth headers.
+  2. `docker-compose.yml` did not pass `SUPABASE_SERVICE_ROLE_KEY` and bucket variables to the frontend container.
+  3. `frontend/app/api/user/dashboard/route.ts` prepended `/uploads/` to full URLs, corrupting the image source.
+  4. The container's `/app/public/uploads` directory lacked write permissions for `USER nextjs`.
+
+**Fix:**
+- Updated bucket `OCR_Images` ACL to `public: true` and enabled MIME types (`image/png`, `image/jpeg`, `image/webp`).
+- Injected all Supabase configuration keys into `docker-compose.yml` for the frontend service.
+- Implemented dual-engine upload in `frontend/lib/supabaseStorage.ts` (Supabase JS SDK + direct REST API fallback) with guaranteed credential fallbacks.
+- Corrected URL resolution in `frontend/app/api/user/dashboard/route.ts` to respect Supabase CDN URLs.
+- Fixed `frontend/Dockerfile` permissions (`chown nextjs:nodejs /app/public/uploads`).
+- Backfilled all existing database records with verified Supabase Storage URLs. All images now render correctly on `/patient/overview`.
 
 ---
 

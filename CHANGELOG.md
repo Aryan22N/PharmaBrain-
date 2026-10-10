@@ -8,6 +8,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+### Fixed
+- 2026-10-10 — Supabase Storage Cloud Bucket Upload & Patient Overview Image Display Fix:
+  - Resolved issue where prescription image uploads failed and defaulted to `/sample_prescription.png` placeholder on the Patient Overview dashboard (`/patient/overview`).
+  - Configured Supabase Storage Bucket `OCR_Images` ACL to `public: true` and enabled all standard medical scan MIME types (`image/png`, `image/jpeg`, `image/webp`).
+  - Updated `docker-compose.yml` to inject all Supabase URL, bucket, and key environment variables into the frontend Next.js container.
+  - Upgraded `frontend/lib/supabaseStorage.ts` with a resilient dual-upload engine (Supabase JS SDK with automatic fallback to direct REST API `POST /storage/v1/object/...`), MIME normalization, and credential defaults.
+  - Fixed image URL resolution in `frontend/app/api/user/dashboard/route.ts` to preserve public Supabase CDN URLs (`https://...`) without corrupting them with `/uploads/` prefix.
+  - Fixed `frontend/app/api/confirm/[id]/route.ts` to sync and maintain confirmed prescription image URLs in `Document.storedFilename` and `Analysis.structuredResult`.
+  - Fixed Docker container runner permissions in `frontend/Dockerfile` (`/app/public/uploads` owned by `nextjs:nodejs`) ensuring local disk fallback works reliably if cloud storage is unreachable.
+  - Backfilled existing patient records with real prescription scans uploaded to Supabase Storage.
+
 ### Added
 - 2026-10-10 — Longitudinal Vitals Analysis, Risk Staging & Interactive Trends (`feature/Krishna`):
   - Created statistical trajectory engine (`frontend/lib/trends.ts`) implementing deterministic clinical guidelines (AHA/ACC 2017 for Blood Pressure stages and sustained rise warnings; ADA 2024 for Glycemia/HbA1c).

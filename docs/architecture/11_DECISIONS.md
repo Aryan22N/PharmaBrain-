@@ -174,3 +174,28 @@ Compute SHA-256 of the raw image bytes. Before processing, check if `raw_ocr` ha
 **Consequences:**
 - Deduplication is per-patient (same image for a different patient is processed fresh).
 - A discarded extraction does not prevent re-processing the same image.
+
+---
+
+## ADR-009 — Supabase Cloud Storage with Resilient Dual-Upload Engine
+
+**Date:** 2026-10-10  
+**Status:** Accepted
+
+**Context:**  
+Prescription document images were initially saved directly to local disk (`frontend/public/uploads/`). In containerized deployments (Docker), local storage is ephemeral, unscalable, and presents permission issues across user boundaries (`USER nextjs`). Furthermore, client-facing dashboards require secure, fast CDN access to prescription scans.
+
+**Decision:**  
+Use Supabase Storage Cloud Bucket (`OCR_Images/uploads/`) with public CDN URLs as primary image storage:
+1. Bucket ACL is set to `public: true` to enable direct browser viewing on patient dashboards without per-request signed token bottlenecks.
+2. `frontend/lib/supabaseStorage.ts` implements a dual-upload pipeline: attempts `@supabase/supabase-js` first, with automatic fallback to native HTTP `fetch` REST API (`POST /storage/v1/object/...`) if client libraries encounter runtime issues.
+3. Fallback to `/app/public/uploads` is preserved for offline dev environments, with Docker runner permissions explicitly granted (`chown -R nextjs:nodejs /app/public`).
+4. `Document.storedFilename` and `Analysis.structuredResult.image_url` store the canonical public Supabase URL.
+
+**Evidence:** Confirmed — `frontend/lib/supabaseStorage.ts`, `docker-compose.yml`, `frontend/Dockerfile`, `frontend/app/api/user/dashboard/route.ts`.
+
+**Consequences:**
+- Images scale independently of application containers and are served over Cloudflare CDN edge caching.
+- Eliminates ephemeral file loss during Docker container recreation.
+- Medical document images are publicly accessible via their cryptographic random-timestamped URL; access policies can be tightened to private signed tokens if regulatory posture changes.
+

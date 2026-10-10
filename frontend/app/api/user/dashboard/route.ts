@@ -293,18 +293,32 @@ export async function GET(request: Request) {
       timelineEvents: unifiedTimeline,
       recordedMedicines: unifiedMedicines,
       documents: documents.map(d => {
+        let sr = d.structuredResult;
+        if (typeof sr === 'string') {
+          try { sr = JSON.parse(sr); } catch (_) { sr = null; }
+        }
+
         let imageUrl: string = "/sample_prescription.png";
-        if (d.structuredResult?.image_url && typeof d.structuredResult.image_url === "string") {
-          imageUrl = d.structuredResult.image_url;
-        } else if (typeof d.storedFilename === "string" && d.storedFilename.startsWith("/uploads/")) {
-          imageUrl = d.storedFilename;
-        } else if (
-          typeof d.storedFilename === "string" &&
-          /\.(jpg|jpeg|png|webp)$/i.test(d.storedFilename)
-        ) {
-          imageUrl = `/uploads/${d.storedFilename}`;
-        } else if (typeof d.filePath === "string" && d.filePath.startsWith("/uploads/")) {
-          imageUrl = d.filePath;
+
+        // Priority 1: image_url from structuredResult
+        const candidate1 = sr?.image_url;
+        if (typeof candidate1 === "string" && candidate1.trim() && candidate1 !== "/sample_prescription.png") {
+          imageUrl = candidate1.trim();
+        }
+        // Priority 2: storedFilename (Supabase URL or local /uploads/)
+        else if (typeof d.storedFilename === "string" && d.storedFilename.trim() && d.storedFilename !== "/sample_prescription.png") {
+          const sf = d.storedFilename.trim();
+          if (sf.startsWith("http://") || sf.startsWith("https://") || sf.startsWith("/uploads/")) {
+            imageUrl = sf;
+          } else if (/\.(jpg|jpeg|png|webp)$/i.test(sf)) {
+            imageUrl = `/uploads/${sf}`;
+          } else {
+            imageUrl = sf;
+          }
+        }
+        // Priority 3: filePath if pointing to an upload or URL
+        else if (typeof d.filePath === "string" && (d.filePath.startsWith("http://") || d.filePath.startsWith("https://") || d.filePath.startsWith("/uploads/"))) {
+          imageUrl = d.filePath.trim();
         }
 
         return {
@@ -313,8 +327,8 @@ export async function GET(request: Request) {
           status: d.status || 'NOT CONFIRMED',
           uploadedAt: d.uploadedAt,
           summary: d.summary || 'Prescription document processed via PaddleOCR pipeline',
-          medicines: d.structuredResult?.medicines || [],
-          structuredResult: d.structuredResult || null,
+          medicines: sr?.medicines || [],
+          structuredResult: sr || null,
           filePath: d.filePath || null,
           imageUrl,
         };

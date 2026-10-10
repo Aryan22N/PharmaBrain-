@@ -70,17 +70,20 @@ export async function POST(
 
       if (existingDocs.length > 0) {
         const docId = existingDocs[0].id;
-        const prevResult = existingDocs[0].structuredResult || {};
-        if (!rec.image_url && prevResult.image_url) {
+        let prevResult = existingDocs[0].structuredResult || {};
+        if (typeof prevResult === "string") {
+          try { prevResult = JSON.parse(prevResult); } catch (_) { prevResult = {}; }
+        }
+        if (!rec.image_url && prevResult.image_url && prevResult.image_url !== "/sample_prescription.png") {
           rec.image_url = prevResult.image_url;
-        } else if (!rec.image_url && (existingDocs[0].storedFilename?.startsWith("/uploads/") || existingDocs[0].storedFilename?.startsWith("http://") || existingDocs[0].storedFilename?.startsWith("https://"))) {
+        } else if (!rec.image_url && existingDocs[0].storedFilename && existingDocs[0].storedFilename !== "/sample_prescription.png" && (existingDocs[0].storedFilename.startsWith("/uploads/") || existingDocs[0].storedFilename.startsWith("http://") || existingDocs[0].storedFilename.startsWith("https://"))) {
           rec.image_url = existingDocs[0].storedFilename;
         }
         await query(
           `UPDATE "Document" 
-           SET status = 'CONFIRMED', "originalName" = $1 
-           WHERE id = $2;`,
-          [docName, docId]
+           SET status = 'CONFIRMED', "originalName" = $1, "storedFilename" = COALESCE($2, "storedFilename")
+           WHERE id = $3;`,
+          [docName, rec.image_url || existingDocs[0].storedFilename, docId]
         );
         await query(
           `UPDATE "Analysis" 

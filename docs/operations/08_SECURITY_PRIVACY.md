@@ -35,7 +35,8 @@ Owner: TBD
 | Third party | What is sent | Masked first? | Basis |
 |---|---|---|---|
 | **Google Gemini API** | Prescription image bytes (when `SEND_IMAGE_TO_LLM=True`) + OCR line text including patient names, UHID, diagnosis, medicines | Emails and phone numbers masked by `mask_pii()`. Patient names and clinical data are **not** masked. | Confirmed — `call_gemini()` in `model/final_prescription_ocr_service_windows.py` |
-| **Supabase** (if used) | All structured data, images not stored in Supabase | N/A — Supabase is the database | Confirmed — `DATABASE_URL` in `model/.env` |
+| **Supabase** (PostgreSQL & Storage) | All structured data in PostgreSQL; prescription scans stored in Supabase Storage Bucket (`OCR_Images/uploads/`) | Stored in private/public buckets according to ACL. DB connection requires TLS. Storage objects encrypted at rest by Supabase. | Confirmed — `DATABASE_URL` in `model/.env`, `NEXT_PUBLIC_SUPABASE_URL` in `frontend` |
+
 
 > **Material privacy consideration:** Patient names, UHID, diagnosis, and medicine data are sent to Google Gemini's API. Operators must ensure this is covered by appropriate data processing agreements and patient consent, and must verify compliance with the Digital Personal Data Protection Act, 2023 (India) before deploying this system. **Confirm with legal counsel.**
 
@@ -81,7 +82,7 @@ Owner: TBD
 | Data in transit (Browser ↔ Next.js) | Depends on deployment configuration — not enforced by the application code |
 | Data in transit (Python ↔ Supabase) | TLS enforced by Supabase connection string (default requires SSL) |
 | Data at rest (PostgreSQL) | Supabase encrypts at rest by default for cloud deployments. Local SQLite: no encryption. |
-| Prescription images (local disk) | No encryption at rest — images stored as plain files in `public/uploads/` and `model/preprocessed/` |
+| Prescription images (cloud object storage) | Stored in Supabase Cloud Storage bucket (`OCR_Images/uploads/`), encrypted at rest by Supabase. Local fallback in container runs under isolated `nextjs:nodejs` user. |
 
 ---
 
@@ -116,7 +117,7 @@ Ranked by severity:
 | 🔴 Critical | JWT fallback secret hardcoded in `frontend/lib/auth.ts` | `JWT_SECRET || 'pharma_brain...'` | Always set `JWT_SECRET` in production environment |
 | 🔴 Critical | Dev API token accepted in production if `API_TOKEN` is not set | `require_key()` allows dev token when `API_TOKEN == DEV_API_TOKEN` | Always set a strong `API_TOKEN` in production `.env` |
 | 🟠 High | No TLS between Next.js and Python service in Docker | `docker-compose.yml` — HTTP plain | Use a reverse proxy (nginx/traefik) with TLS termination for production |
-| 🟠 High | Prescription images stored unencrypted on local disk | `public/uploads/`, `model/preprocessed/` | Move to encrypted object storage (S3 with server-side encryption) |
+| 🟠 High | Prescription images stored unencrypted on local disk | **Mitigated**: Primary storage migrated to Supabase Cloud Storage (`OCR_Images/uploads/`) with encryption at rest. Local disk retained only as secondary runtime fallback | Restrict bucket ACLs and configure signed token URLs for clinical HIPAA/DPDPA strict compliance |
 | 🟡 Medium | CORS set to `allow_origins=["*"]` in Python service | `app.add_middleware(CORSMiddleware, allow_origins=["*"])` | Restrict to specific frontend origin in production |
 | 🟡 Medium | No rate limiting on OCR endpoint | `api_ocr()` — no rate limit | Add FastAPI middleware or API gateway rate limiting |
 | 🟡 Medium | `edits_json` stores exact field diffs including patient data | `confirmed_prescriptions.edits_json` | Acceptable for clinical audit; ensure DB-level access control |

@@ -87,6 +87,7 @@ flowchart TD
 
 - Single Python process runs OCR, LLM, DB ORM, and REST API.
 - Medicine matching: in-memory `MED_INDEX` dict + RapidFuzz string similarity.
+- Cloud object storage: Supabase Storage Cloud Bucket (`OCR_Images/uploads/`) with public CDN URLs, dual-upload engine (Supabase JS Client + direct REST API fallback), and containerized disk fallback.
 - No GPU; CPU-only PaddleOCR inference.
 - SQLite fallback for local development; Supabase PostgreSQL for deployment.
 
@@ -97,7 +98,6 @@ flowchart TD
 - Full Indian medicine database (NLEM / Jan Aushadhi / CDSCO) loaded into `medicine_master`.
 - Real-time WebSocket progress updates instead of client polling.
 - Multi-page PDF prescription support.
-- Object storage (S3 / GCS) for prescription images.
 
 ## Key Design Principles
 
