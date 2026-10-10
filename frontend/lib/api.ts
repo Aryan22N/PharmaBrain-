@@ -262,4 +262,16 @@ export const clientApi = {
     }
     return res.json();
   },
+
+  async getPatientTrends(): Promise<any> {
+    const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+    const res = await fetch("/api/patient/trends", {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to load patient trends (${res.status})`);
+    }
+    return res.json();
+  },
 };

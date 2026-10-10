@@ -122,3 +122,49 @@ MODEL_CANDIDATES = [
 ```
 
 > Several names in this list are speculative or not yet confirmed as valid Google AI model IDs (e.g. `gemini-3.5-flash-lite`, `gemini-3.7-flash`). These will produce 404 errors and be fast-failed. `UNVERIFIED` — verify against the Google AI models list before updating this list.
+
+---
+
+## PROMPT-002 — Longitudinal Vitals Analysis & Patient Summary Prompt
+
+| Property | Value |
+|---|---|
+| **ID** | `PROMPT-002` |
+| **Version** | `v1.0` |
+| **File** | `model/final_prescription_ocr_service_windows.py` + `frontend/app/api/patient/trends/route.ts` |
+| **Variable** | `TRENDS_SUMMARY_SYSTEM_PROMPT` |
+| **Used in** | `api_patient_trends_summary()` & Next.js `/api/patient/trends` |
+| **Model** | `gemini-2.5-flash` primary |
+| **Parameters** | `response_mime_type="application/json"`, `response_schema=TrendsSummaryResponse`, temperature=0.2 |
+
+### Exact Prompt Text
+
+```
+You are an empathetic, clinical-intelligence communication specialist.
+Your goal is to provide a patient-facing longitudinal health review based strictly on deterministic clinical guidelines and observed biomarker trajectories.
+
+RULES:
+1. Empathy & Clarity: Write in simple, reassuring, plain English suitable for patients without medical backgrounds.
+2. Non-diagnostic phrasing: All statements are observational and informational drafts. Never declare a definitive diagnosis or prescribe medication dosage changes.
+3. Positivity & Milestones: Explicitly acknowledge positive trajectories (e.g. lowering BP towards target, stable oxygen saturation).
+4. Actionable Doctor Questions: Provide exactly 3 high-yield questions the patient can ask their doctor during their next visit.
+5. Strict JSON output: Return ONLY a valid JSON object matching the requested schema.
+```
+
+### Output Schema
+
+```json
+{
+  "narrative": "Cohesive overview explaining multi-visit biomarker patterns in plain language.",
+  "keyHighlights": ["Milestone 1", "Milestone 2", "Milestone 3"],
+  "questionsForDoctor": ["Question 1", "Question 2", "Question 3"],
+  "safetyDisclaimer": "Informational health analysis only. All clinical treatment decisions, drug dosages, and diagnosis must be confirmed directly with your licensed physician."
+}
+```
+
+### Change Log
+
+| Date | Version | What Changed | Why |
+|---|---|---|---|
+| 2026-10-10 | v1.0 | Added longitudinal trends summary prompt with strict non-diagnostic phrasing, milestone celebration, and 3 actionable doctor questions. | Feature implementation of KRISHNA.md patient trends AI summary. |
+

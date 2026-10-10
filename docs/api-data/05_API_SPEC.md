@@ -346,6 +346,29 @@ curl "http://localhost:8000/patients/483027156/observations?kind=bp" \
 
 ---
 
+### `POST /patients/{patient_id}/trends_summary`
+
+Generates empathetic, patient-facing longitudinal AI narrative using Google Gemini and deterministic clinical guidelines.
+
+**Auth required:** Yes  
+**Body:** JSON `{ trends: object, patient_name: string }`
+
+**Response 200:**
+```json
+{
+  "narrative": "Your longitudinal health trajectory tracks physiological markers across clinical visits...",
+  "keyHighlights": ["Latest BP: 124/80 mmHg (Normal)", "HbA1c glycemic control improved to 6.4%"],
+  "questionsForDoctor": [
+    "How do my blood pressure readings align with our long-term cardiovascular goals?",
+    "Are there any adjustments needed for my daily nutrition?",
+    "When should we schedule my next biomarker check?"
+  ],
+  "safetyDisclaimer": "Informational health analysis only. All clinical treatment decisions, drug dosages, and diagnosis must be confirmed directly with your licensed physician."
+}
+```
+
+---
+
 ## Next.js API Routes (frontend proxy)
 
 The frontend's API routes are in `frontend/app/api/`. They enforce JWT auth, then proxy to the Python service. Full list:
@@ -353,7 +376,7 @@ The frontend's API routes are in `frontend/app/api/`. They enforce JWT auth, the
 | Route | Method | Proxies to Python | Notes |
 |---|---|---|---|
 | `/api/ocr` | POST | `POST /ocr` | Uploads image to Supabase Storage Bucket (`OCR_Images/uploads/`), checks SHA256 duplicate image hash, creates `Document` record |
-| `/api/confirm` | POST | `POST /confirm/{id}` | |
+| `/api/confirm` | POST | `POST /confirm/{id}` | Confirms prescription and mirrors vitals to `observations` table |
 | `/api/discard` | POST | `POST /discard/{id}` | |
 | `/api/extractions/[id]` | GET | `GET /extractions/{id}` | |
 | `/api/extractions` | GET | `GET /extractions` | |
@@ -361,6 +384,7 @@ The frontend's API routes are in `frontend/app/api/`. They enforce JWT auth, the
 | `/api/structure/[id]` | POST | `POST /structure/{id}` | |
 | `/api/patients/[id]/prescriptions` | GET | `GET /patients/{id}/prescriptions` | |
 | `/api/patients/[id]/observations` | GET | `GET /patients/{id}/observations` | |
+| `/api/patient/trends` | GET | `POST /patients/{patient_id}/trends_summary` | Evaluates longitudinal statistical trends (AHA/ACC BP, ADA glucose), deltas, and Gemini AI patient narrative |
 | `/api/health` | GET | `GET /health` | |
 | `/api/auth` | POST | — | Login/register, returns JWT cookie |
 | `/api/user` | GET | — | Current user info from DB |
