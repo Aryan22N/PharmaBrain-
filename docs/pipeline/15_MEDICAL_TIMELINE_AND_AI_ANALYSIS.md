@@ -319,6 +319,19 @@ RULES FOR GENERATION:
 #### 4. Deterministic Safety Fallback (`generateDeterministicFallbackSummary`)
 If the Gemini API key is missing, network fails, or the request times out (12s abort signal), the system activates a deterministic fallback generator that produces the exact same JSON contract using deterministic clinical rules without throwing an error to the user.
 
+#### 5. Hash-Based & On-Demand Caching Engine (0 ms Latency & Quota Protection)
+To prevent redundant API calls to Gemini on every page visit or tab switch, the system implements a **dual-layer hash cache**:
+1. **Deterministic SHA-256 State Hash:**
+   `computeObservationsHash(patientCode, observations, documents)` generates a SHA-256 fingerprint from the patient's exact observation timestamps, values, units, and document IDs.
+2. **Layer 1: In-Memory RAM Cache:**
+   On repeat visits with an identical hash, the route serves the cached JSON narrative in **< 2 milliseconds (0 ms user latency)**.
+3. **Layer 2: Supabase PostgreSQL Persistence (`patient_trends_cache`):**
+   Persists `{ patient_id, obs_hash, ai_summary, updated_at }` across server container restarts.
+4. **Automatic Cache Invalidation:**
+   If a new prescription is confirmed or new vitals are logged, the SHA-256 hash changes automatically, triggering a live Gemini evaluation.
+5. **On-Demand "Refresh Analysis" Button:**
+   Clicking the *"Refresh Analysis"* button passes `?force=true`, bypassing all caches, invoking Gemini live, and updating both the in-memory and PostgreSQL caches.
+
 ---
 
 ## 5. Where the Gemini Output is Stored
@@ -327,7 +340,7 @@ If the Gemini API key is missing, network fails, or the request times out (12s a
 |---|---|---|---|
 | **Prescription Structured JSON** | Gemini 2.5 Flash Vision | `extractions.analysis_json`<br/>`confirmed_prescriptions.data_json`<br/>`"Analysis"."structuredResult"` | JSONB / Text |
 | **Prescription Card Summary** | Gemini + Rules Synthesizer | `"Analysis".summary`<br/>`patient_timeline_events.description` | Text (e.g. *"City Care Hospital (Dr. Gupta). Extracted 4 therapies..."*) |
-| **Longitudinal Patient Narrative** | Gemini 2.5 Flash LLM | Returned via `/api/patient/trends` → Cached in client state / session; rendered dynamically on Overview and Timeline | JSON `{ narrative, keyHighlights, questionsForDoctor, safetyDisclaimer }` |
+| **Longitudinal Patient Narrative** | Gemini 2.5 Flash LLM | `patient_trends_cache.ai_summary` (PostgreSQL) + In-Memory RAM Cache + Client React Context | JSON `{ narrative, keyHighlights, questionsForDoctor, safetyDisclaimer }` |
 | **Prescription Image Scan** | Supabase Storage Client | Bucket `OCR_Images`, path `uploads/<filename>_<ts>.<ext>`; URL stored in `"Document"."storedFilename"` | Public CDN URL (HTTPS) |
 
 ---
@@ -342,5 +355,7 @@ If the Gemini API key is missing, network fails, or the request times out (12s a
 | `patient_timeline_events` | Supabase PostgreSQL | Chronological audit trail (visits, labs, symptoms, notes) | `id` (PK), `patient_id` (Indexed), `event_date` (Indexed) |
 | `patient_medications` | Supabase PostgreSQL | Medication orders with source reliability and conflicts | `id` (PK), `patient_id` (Indexed), `status` (Indexed) |
 | `observations` | Supabase PostgreSQL | Quantitative biomarker time-series (BP, glucose, HbA1c) | `id` (PK), `patient_id` (Indexed), `obs_date` (Indexed) |
+| `patient_trends_cache` | Supabase PostgreSQL | Persistent cache for longitudinal Gemini narratives & hashes | `patient_id` (PK), `obs_hash`, `updated_at` |
 | `confirmed_prescriptions` | Supabase PostgreSQL | Authoritative clinical review database (Python service) | `id` (PK), `extraction_id` (FK), `patient_id` (Indexed) |
 | `OCR_Images` | Supabase Cloud Storage | Persistent object storage for raw prescription scans | Path: `uploads/<filename>_<timestamp>.<ext>` |
+

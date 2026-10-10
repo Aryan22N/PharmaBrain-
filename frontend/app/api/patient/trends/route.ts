@@ -3,9 +3,49 @@ import { cookies } from "next/headers";
 import { verifyToken, generate9DigitPatientId } from "@/lib/auth";
 import { query } from "@/lib/db";
 import { calculatePatientTrends, PatientLongitudinalTrends } from "@/lib/trends";
+import crypto from "crypto";
 import { pythonBackendFetch } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
+
+interface CachedSummaryEntry {
+  hash: string;
+  summary: any;
+  cachedAt: string;
+}
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __patientTrendsMemoryCache: Map<string, CachedSummaryEntry> | undefined;
+}
+
+const memoryCache: Map<string, CachedSummaryEntry> =
+  global.__patientTrendsMemoryCache || new Map<string, CachedSummaryEntry>();
+
+if (process.env.NODE_ENV !== "production") {
+  global.__patientTrendsMemoryCache = memoryCache;
+}
+
+/**
+ * Computes a deterministic SHA-256 signature representing the exact state of a patient's observations & documents
+ */
+function computeObservationsHash(patientCode: string, obs: any[], docs: any[]): string {
+  const obsSig = obs
+    .map((o) => `${(o.obs_date || o.date || "").slice(0, 10)}:${o.kind}:${o.systolic ?? ""}:${o.diastolic ?? ""}:${o.value ?? ""}`)
+    .sort()
+    .join("|");
+
+  const docSig = docs
+    .map((d) => `${d.id}:${d.status}:${(d.uploadedAt || "").slice(0, 10)}`)
+    .sort()
+    .join("|");
+
+  return crypto
+    .createHash("sha256")
+    .update(`${patientCode}::obs_count=${obs.length}::docs_count=${docs.length}::[${obsSig}]::[${docSig}]`)
+    .digest("hex");
+}
+
 
 // Standard clinical demo baseline if patient has zero recorded historical encounters
 const DEMO_LONGITUDINAL_OBSERVATIONS = [
@@ -172,8 +212,13 @@ function generateDeterministicFallbackSummary(trends: PatientLongitudinalTrends,
 
 export async function GET(req: NextRequest) {
   try {
+    const forceRefresh =
+      req.nextUrl.searchParams.get("force") === "true" ||
+      req.nextUrl.searchParams.get("refresh") === "true";
+
     const cookieStore = await cookies();
     let token = cookieStore.get("auth_token")?.value;
+
 
     if (!token) {
       const authHeader = req.headers.get("authorization");
@@ -303,12 +348,90 @@ export async function GET(req: NextRequest) {
     // 4. Compute statistical and clinical guideline trajectories
     const trends = calculatePatientTrends(patientCode, uniqueObs, documents);
 
-    // 5. Generate AI Patient Narrative
-    const aiSummary = await generateGeminiPatientSummary(trends, user.name);
+    // 5. Hash-based Cache lookup (0ms memory cache + Supabase PostgreSQL persistence)
+    const obsHash = computeObservationsHash(patientCode, uniqueObs, documents);
+    let aiSummary: any = null;
+    let isCached = false;
+    let cachedAt: string | null = null;
+
+    if (!forceRefresh) {
+      // 5A. Check in-memory cache first (0ms latency)
+      const memHit = memoryCache.get(patientCode);
+      if (memHit && memHit.hash === obsHash && memHit.summary) {
+        aiSummary = memHit.summary;
+        isCached = true;
+        cachedAt = memHit.cachedAt;
+      } else {
+        // 5B. Check persistent DB cache (patient_trends_cache table)
+        try {
+          const cacheRows = await query(
+            `SELECT obs_hash, ai_summary, updated_at
+             FROM patient_trends_cache
+             WHERE patient_id = $1
+             LIMIT 1;`,
+            [patientCode]
+          );
+          if (cacheRows.length > 0 && cacheRows[0].obs_hash === obsHash && cacheRows[0].ai_summary) {
+            let dbSummary = cacheRows[0].ai_summary;
+            if (typeof dbSummary === "string") {
+              try {
+                dbSummary = JSON.parse(dbSummary);
+              } catch (_) {}
+            }
+            aiSummary = dbSummary;
+            isCached = true;
+            cachedAt = cacheRows[0].updated_at
+              ? new Date(cacheRows[0].updated_at).toISOString()
+              : new Date().toISOString();
+
+            // Populate in-memory cache for subsequent instant hits
+            memoryCache.set(patientCode, {
+              hash: obsHash,
+              summary: aiSummary,
+              cachedAt,
+            });
+          }
+        } catch (dbErr) {
+          console.warn("[Trends/Cache] DB cache lookup warning:", dbErr);
+        }
+      }
+    }
+
+    // 5C. If not cached, or if forceRefresh was explicitly requested, call Gemini
+    if (!aiSummary) {
+      console.log(
+        `[Trends/AI] Invoking Gemini for patient ${patientCode} (force=${forceRefresh}, hash=${obsHash.slice(0, 8)})...`
+      );
+      aiSummary = await generateGeminiPatientSummary(trends, user.name);
+      cachedAt = new Date().toISOString();
+
+      // Update in-memory cache
+      memoryCache.set(patientCode, {
+        hash: obsHash,
+        summary: aiSummary,
+        cachedAt,
+      });
+
+      // Persist to PostgreSQL patient_trends_cache table
+      try {
+        await query(
+          `INSERT INTO patient_trends_cache (patient_id, obs_hash, ai_summary, updated_at)
+           VALUES ($1, $2, $3, NOW())
+           ON CONFLICT (patient_id)
+           DO UPDATE SET obs_hash = EXCLUDED.obs_hash, ai_summary = EXCLUDED.ai_summary, updated_at = NOW();`,
+          [patientCode, obsHash, JSON.stringify(aiSummary)]
+        );
+      } catch (dbSaveErr) {
+        console.warn("[Trends/Cache] Could not persist trends cache to DB:", dbSaveErr);
+      }
+    }
 
     return NextResponse.json({
       success: true,
       isDemoBaseline,
+      cached: isCached,
+      cachedAt,
+      hash: obsHash.slice(0, 12),
       user: {
         id: user.id,
         name: user.name,

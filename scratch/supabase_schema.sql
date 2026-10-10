@@ -182,3 +182,20 @@ WHERE email = 'rahul.sharma@example.com' AND ("patientId" IS NULL OR "patientId"
 UPDATE "User"
 SET "patientId" = (floor(random() * (999999999 - 100000000 + 1)) + 100000000)::text
 WHERE "patientId" IS NULL OR "patientId" = '';
+
+-- 8. Patient Trends Cache Table
+CREATE TABLE IF NOT EXISTS patient_trends_cache (
+    patient_id VARCHAR(64) PRIMARY KEY,
+    obs_hash VARCHAR(64) NOT NULL,
+    ai_summary JSONB NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_trends_cache_patient_id ON patient_trends_cache(patient_id);
+ALTER TABLE patient_trends_cache ENABLE ROW LEVEL SECURITY;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'service_role_all_trends_cache') THEN
+        CREATE POLICY service_role_all_trends_cache ON patient_trends_cache FOR ALL USING (true) WITH CHECK (true);
+    END IF;
+END $$;
+

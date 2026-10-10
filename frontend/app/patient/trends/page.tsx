@@ -37,6 +37,7 @@ export default function TrendsPage() {
   const [trendsData, setTrendsData] = useState<PatientLongitudinalTrends | null>(null);
   const [aiSummary, setAiSummary] = useState<any | null>(null);
   const [isDemoBaseline, setIsDemoBaseline] = useState<boolean>(false);
+  const [isAiCached, setIsAiCached] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshingAi, setRefreshingAi] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<"bp" | "glucose" | "hba1c" | "pulse" | "spo2" | "weight">("bp");
@@ -50,7 +51,8 @@ export default function TrendsPage() {
       else setRefreshingAi(true);
 
       const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
-      const res = await fetch("/api/patient/trends", {
+      const url = forceAiRefresh ? "/api/patient/trends?force=true" : "/api/patient/trends";
+      const res = await fetch(url, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
@@ -59,6 +61,7 @@ export default function TrendsPage() {
         if (data.trends) setTrendsData(data.trends);
         if (data.aiSummary) setAiSummary(data.aiSummary);
         if (data.isDemoBaseline !== undefined) setIsDemoBaseline(data.isDemoBaseline);
+        if (data.cached !== undefined) setIsAiCached(data.cached);
       }
     } catch (err) {
       console.error("Failed loading patient trends:", err);
@@ -67,6 +70,7 @@ export default function TrendsPage() {
       setRefreshingAi(false);
     }
   };
+
 
   useEffect(() => {
     fetchTrends();
@@ -151,6 +155,12 @@ export default function TrendsPage() {
                 <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 border border-teal-200">
                   AI Draft
                 </span>
+                {isAiCached && (
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    Instant Cached
+                  </span>
+                )}
               </h3>
               <p className="text-[11px] text-slate-500">
                 Empathetic plain-English synthesis of your biomarker trajectory across recorded encounters.
@@ -164,7 +174,7 @@ export default function TrendsPage() {
             className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl bg-white text-slate-700 hover:text-teal-700 border border-slate-200 hover:border-teal-300 shadow-xs transition-all disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${refreshingAi ? "animate-spin text-teal-600" : ""}`} />
-            <span>{refreshingAi ? "Re-analyzing..." : "Refresh Analysis"}</span>
+            <span>{refreshingAi ? "Re-analyzing with Gemini..." : "Refresh Analysis"}</span>
           </button>
         </div>
 
